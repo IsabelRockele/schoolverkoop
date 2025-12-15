@@ -256,23 +256,13 @@ nieuweBestellingKnop.style.display = "block";
 naamKindInput.disabled = true;
 klasSelect.disabled = true;
 
+emailKoperInput.disabled = true;
+
 // bestelknop blokkeren
 bestelKnop.disabled = true;
+
 
 // alle + en − knoppen + variantkeuze uitschakelen
-document.querySelectorAll(".plus, .min, select").forEach(el => {
-  el.disabled = true;
-});
-
-
-// invoervelden blokkeren
-naamKindInput.disabled = true;
-klasSelect.disabled = true;
-
-// bestelknop blokkeren
-bestelKnop.disabled = true;
-
-// alle + en − knoppen uitschakelen
 document.querySelectorAll(".plus, .min, select").forEach(el => {
   el.disabled = true;
 });
@@ -297,6 +287,8 @@ nieuweBestellingKnop.addEventListener("click", () => {
   // invoervelden opnieuw activeren + leegmaken
   naamKindInput.disabled = false;
   klasSelect.disabled = false;
+  emailKoperInput.disabled = false;
+
   naamKindInput.value = "";
   klasSelect.value = "";
   emailKoperInput.value = "";
