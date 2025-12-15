@@ -220,3 +220,15 @@ select, input{
   }
 
 }
+/* Grote bevestigingsmelding na bestelling */
+.status.groot {
+  margin: 20px 0;
+  padding: 24px;
+  background: #e6f4ea;
+  border: 2px solid #34a853;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f5132;
+  text-align: center;
+}
