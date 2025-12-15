@@ -179,3 +179,13 @@ select, input{
   padding:18px 12px 30px;
   color:var(--muted);
 }
+
+.verborgen {
+  display: none;
+}
+
+.secondary {
+  margin-top: 10px;
+  background: #e5e7eb;
+  color: #111;
+}
