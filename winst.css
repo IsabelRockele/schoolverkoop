@@ -1,0 +1,210 @@
+/* =========================
+   ALGEMEEN
+========================= */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f5f6f7;
+  color: #222;
+}
+
+h1, h2 {
+  margin: 0;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+button {
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+/* =========================
+   BOVENBALK
+========================= */
+
+.winst-header {
+  background-color: #ffffff;
+  padding: 20px 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.winst-header h1 {
+  margin-top: 10px;
+  font-size: 22px;
+}
+
+.winst-header .subtitel {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #666;
+}
+
+.terug-btn {
+  background: none;
+  border: none;
+  color: #0066cc;
+  padding: 0;
+  font-size: 14px;
+}
+
+.terug-btn:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   SAMENVATTING
+========================= */
+
+.winst-samenvatting {
+  display: flex;
+  gap: 20px;
+  padding: 20px 30px;
+}
+
+.samenvatting-blok {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.samenvatting-blok .label {
+  display: block;
+  font-size: 13px;
+  color: #666;
+}
+
+.samenvatting-blok .waarde {
+  display: block;
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* =========================
+   INSTELLINGEN
+========================= */
+
+.winst-instellingen {
+  padding: 20px 30px;
+}
+
+.instelling-blok {
+  background-color: #ffffff;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  max-width: 300px;
+  margin-bottom: 25px;
+}
+
+.instelling-blok label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.instelling-blok input {
+  width: 100%;
+  padding: 6px;
+  font-size: 14px;
+}
+
+.instelling-blok .hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* =========================
+   INKOOPPRIJZEN TABEL
+========================= */
+
+.inkoopprijzen h2 {
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+}
+
+thead {
+  background-color: #f0f0f0;
+}
+
+th, td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  font-weight: bold;
+}
+
+td input {
+  width: 90px;
+  padding: 4px;
+  font-size: 14px;
+}
+
+/* =========================
+   RESULTAAT
+========================= */
+
+.winst-resultaat {
+  margin: 30px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 2px solid #cce5cc;
+  border-radius: 6px;
+}
+
+.resultaat-regel {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.resultaat-totaal {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ccc;
+  font-size: 18px;
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+/* =========================
+   ACTIES
+========================= */
+
+.winst-acties {
+  padding: 20px 30px;
+  text-align: right;
+}
+
+.winst-acties button {
+  background-color: #0066cc;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+}
+
+.winst-acties button:hover {
+  background-color: #004f9e;
+}
