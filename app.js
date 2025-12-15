@@ -54,8 +54,9 @@ const totaalEl = document.getElementById("totaal");
 // nieuw (optie B)
 const leerlingGegevensEl = document.getElementById("leerlingGegevens");
 const naamKindInput = document.getElementById("naamKind");
-const emailKoperInput = document.getElementById("emailKoper");
 const klasSelect = document.getElementById("klas");
+const naamKoperInput = document.getElementById("naamKoper");
+const emailKoperInput = document.getElementById("emailKoper");
 const bestelKnop = document.getElementById("bestelKnop");
 const nieuweBestellingKnop = document.getElementById("nieuweBestellingKnop");
 
@@ -193,16 +194,20 @@ function renderMandje() {
 function controleerBestelKnop() {
   const heeftNaam = naamKindInput.value.trim() !== "";
   const heeftKlas = klasSelect.value !== "";
+  const heeftNaamKoper = naamKoperInput.value.trim() !== "";
   const heeftEmail = emailKoperInput.value.trim() !== "";
 
-  bestelKnop.disabled = !(heeftNaam && heeftKlas && heeftEmail);
+  bestelKnop.disabled = !(heeftNaam && heeftKlas && heeftNaamKoper && heeftEmail);
 }
+
 
 
 // luisteren naar invoer
 naamKindInput.addEventListener("input", controleerBestelKnop);
 klasSelect.addEventListener("change", controleerBestelKnop);
 emailKoperInput.addEventListener("input", controleerBestelKnop);
+naamKoperInput.addEventListener("input", controleerBestelKnop);
+
 
 // 🔹 KLIK OP BESTELLEN → OPSLAAN (TEST)
 bestelKnop.addEventListener("click", async () => {
@@ -226,6 +231,7 @@ bestelKnop.addEventListener("click", async () => {
   const bestelling = {
     leerling: naamKindInput.value.trim(),
     klas: klasSelect.value,
+    naamKoper: naamKoperInput.value.trim(),
     emailKoper: emailKoperInput.value.trim(),
     producten: items.map(item => ({
       naam: item.naam,
@@ -246,8 +252,16 @@ bestellingVergrendeld = true;
 
 // bevestiging zichtbaar op pagina (geen dubbele clicks)
 statusEl.textContent =
-  "Dank je voor je bestelling. Je ontvangt een bevestiging via e-mail.";
+  "Dank je voor je bestelling! Je ontvangt zo meteen een bevestiging via e-mail.";
 statusEl.classList.remove("verborgen");
+statusEl.classList.add("groot");
+
+// na 3 seconden: terug naar boven scrollen
+setTimeout(() => {
+  statusEl.classList.remove("groot");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}, 3000);
+
 
 // toon knop “Nieuwe bestelling”
 nieuweBestellingKnop.style.display = "block";
