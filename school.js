@@ -26,6 +26,7 @@ const klasFilter = document.getElementById("klasFilter");
 const tabelKlas = document.querySelector("#totaalPerKlas tbody");
 const downloadPdfBtn = document.getElementById("downloadPdfKlas");
 const downloadLeveranciersPdf = document.getElementById("downloadLeveranciersPdf");
+const downloadPdfPerKind = document.getElementById("downloadPdfPerKind");
 
 
 // ============================
@@ -285,6 +286,95 @@ pdf.text(`Totaal betaald: €${totaalKind}`, marginL, y);
 
   pdf.save(`besteloverzicht_${leerlingNaam}_${klas}.pdf`);
 }
+// ============================
+// F) PDF PER KIND – HELE KLAS
+// ============================
+async function genereerPdfPerKind(klas) {
+  const data = await verzamelBestellingenPerKind(klas);
+  const leerlingen = Object.keys(data);
+
+  if (leerlingen.length === 0) {
+    alert("Geen bestellingen voor deze klas.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const vandaag = new Date().toLocaleDateString("nl-BE");
+
+  leerlingen.forEach((leerlingNaam, index) => {
+    if (index > 0) pdf.addPage();
+
+    let y = 25;
+    const marginL = 20;
+    const pageW = pdf.internal.pageSize.getWidth();
+    let totaalKind = 0;
+
+    // Titel
+    pdf.setFontSize(18);
+    pdf.setFont(undefined, "bold");
+    pdf.text("Besteloverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+    y += 10;
+
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, "normal");
+    pdf.text(`Gegenereerd op: ${vandaag}`, pageW / 2, y, { align: "center" });
+    y += 12;
+
+    pdf.setFontSize(12);
+    pdf.text(`Leerling: ${leerlingNaam}`, marginL, y);
+    y += 7;
+    pdf.text(`Klas: ${klas}`, marginL, y);
+    y += 14;
+
+    const kindData = data[leerlingNaam];
+
+    Object.keys(kindData).forEach(koper => {
+      pdf.setFontSize(13);
+      pdf.setFont(undefined, "bold");
+      pdf.text(`Besteld door: ${koper}`, marginL, y);
+      y += 8;
+
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, "normal");
+
+      let subtotaalKoper = 0;
+      const samengevoegd = {};
+
+      kindData[koper].forEach(item => {
+        const sleutel = `${item.naam}|||${item.variant}|||${item.prijs}`;
+        if (!samengevoegd[sleutel]) {
+          samengevoegd[sleutel] = { ...item, aantal: 0 };
+        }
+        samengevoegd[sleutel].aantal += item.aantal;
+      });
+
+      Object.values(samengevoegd).forEach(item => {
+        const regelTotaal = item.aantal * item.prijs;
+        subtotaalKoper += regelTotaal;
+        totaalKind += regelTotaal;
+
+        pdf.text(
+          `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`,
+          marginL + 5,
+          y
+        );
+        y += 6.5;
+      });
+
+      pdf.setFont(undefined, "bold");
+      pdf.text(`Subtotaal ${koper}: €${subtotaalKoper}`, marginL + 5, y);
+      y += 14;
+    });
+
+    pdf.setFontSize(13);
+    pdf.setFont(undefined, "bold");
+    pdf.text(`Totaal betaald: €${totaalKind}`, marginL, y);
+  });
+
+  pdf.save(`besteloverzichten_${klas}.pdf`);
+}
 
 // ============================
 // C) PDF PER KLAS
@@ -499,6 +589,17 @@ downloadPdfBtn.addEventListener("click", () => {
     return;
   }
   genereerPdfPerKlas(klasFilter.value);
+});
+
+downloadPdfPerKind.addEventListener("click", () => {
+  const klas = klasFilter.value;
+
+  if (!klas) {
+    alert("Kies eerst een klas.");
+    return;
+  }
+
+  genereerPdfPerKind(klas);
 });
 
 // ============================
