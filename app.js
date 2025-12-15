@@ -54,10 +54,16 @@ const totaalEl = document.getElementById("totaal");
 // nieuw (optie B)
 const leerlingGegevensEl = document.getElementById("leerlingGegevens");
 const naamKindInput = document.getElementById("naamKind");
+const emailKoperInput = document.getElementById("emailKoper");
 const klasSelect = document.getElementById("klas");
 const bestelKnop = document.getElementById("bestelKnop");
+const nieuweBestellingKnop = document.getElementById("nieuweBestellingKnop");
 
 let mandje = {};
+let bestellingVergrendeld = false;
+
+// hiermee kunnen we straks alle productkaart-aantallen netjes resetten
+const productControls = [];
 
 statusEl.textContent = "";
 
@@ -90,8 +96,19 @@ productenData.forEach(product => {
   const plusBtn = card.querySelector(".plus");
   const valEl = card.querySelector(".val");
   const variantEl = card.querySelector("select");
+variantEl.addEventListener("change", () => {
+  if (bestellingVergrendeld) return;
+  update();
+});
 
   let aantal = 0;
+  // Optie C: reset kunnen uitvoeren bij "Nieuwe bestelling"
+  productControls.push({
+    reset: () => {
+      aantal = 0;
+      update();
+    }
+  });
 
   function update() {
     valEl.textContent = aantal;
@@ -112,17 +129,20 @@ productenData.forEach(product => {
     renderMandje();
   }
 
-  minBtn.onclick = () => {
-    if (aantal > 0) {
-      aantal--;
-      update();
-    }
-  };
-
-  plusBtn.onclick = () => {
-    aantal++;
+ minBtn.onclick = () => {
+  if (bestellingVergrendeld) return;
+  if (aantal > 0) {
+    aantal--;
     update();
-  };
+  }
+};
+
+
+ plusBtn.onclick = () => {
+  if (bestellingVergrendeld) return;
+  aantal++;
+  update();
+};
 
   productenEl.appendChild(card);
 });
@@ -173,13 +193,16 @@ function renderMandje() {
 function controleerBestelKnop() {
   const heeftNaam = naamKindInput.value.trim() !== "";
   const heeftKlas = klasSelect.value !== "";
+  const heeftEmail = emailKoperInput.value.trim() !== "";
 
-  bestelKnop.disabled = !(heeftNaam && heeftKlas);
+  bestelKnop.disabled = !(heeftNaam && heeftKlas && heeftEmail);
 }
+
 
 // luisteren naar invoer
 naamKindInput.addEventListener("input", controleerBestelKnop);
 klasSelect.addEventListener("change", controleerBestelKnop);
+emailKoperInput.addEventListener("input", controleerBestelKnop);
 
 // 🔹 KLIK OP BESTELLEN → OPSLAAN (TEST)
 bestelKnop.addEventListener("click", async () => {
@@ -203,6 +226,7 @@ bestelKnop.addEventListener("click", async () => {
   const bestelling = {
     leerling: naamKindInput.value.trim(),
     klas: klasSelect.value,
+    emailKoper: emailKoperInput.value.trim(),
     producten: items.map(item => ({
       naam: item.naam,
       variant: item.variant,
@@ -215,14 +239,31 @@ bestelKnop.addEventListener("click", async () => {
   };
 
   try {
-  await addDoc(collection(db, "bestellingen_test"), bestelling);
+ await addDoc(collection(db, "bestellingen_test"), bestelling);
 
-// 🔒 VERGRENDELEN NA OPSLAAN
-alert("Dank je! Je bestelling is goed ontvangen.");
+// 🔒 OPTIE C: VERGRENDELEN NA OPSLAAN (mandje blijft staan)
+bestellingVergrendeld = true;
 
-// mandje leeg
-mandje = {};
-renderMandje();
+// bevestiging zichtbaar op pagina (geen dubbele clicks)
+statusEl.textContent =
+  "Dank je voor je bestelling. Je ontvangt een bevestiging via e-mail.";
+statusEl.classList.remove("verborgen");
+
+// toon knop “Nieuwe bestelling”
+nieuweBestellingKnop.style.display = "block";
+
+// invoervelden blokkeren
+naamKindInput.disabled = true;
+klasSelect.disabled = true;
+
+// bestelknop blokkeren
+bestelKnop.disabled = true;
+
+// alle + en − knoppen + variantkeuze uitschakelen
+document.querySelectorAll(".plus, .min, select").forEach(el => {
+  el.disabled = true;
+});
+
 
 // invoervelden blokkeren
 naamKindInput.disabled = true;
@@ -241,6 +282,42 @@ document.querySelectorAll(".plus, .min, select").forEach(el => {
     console.error("Fout bij opslaan bestelling:", error);
     alert("Er ging iets mis bij het opslaan.");
   }
+});
+
+nieuweBestellingKnop.addEventListener("click", () => {
+  // ontgrendel
+  bestellingVergrendeld = false;
+
+  // mandje leeg + UI opnieuw opbouwen
+  mandje = {};
+
+  // reset alle productkaart-aantallen naar 0 (belangrijk!)
+  productControls.forEach(pc => pc.reset());
+
+  // invoervelden opnieuw activeren + leegmaken
+  naamKindInput.disabled = false;
+  klasSelect.disabled = false;
+  naamKindInput.value = "";
+  klasSelect.value = "";
+  emailKoperInput.value = "";
+
+
+  // productknoppen opnieuw activeren
+  document.querySelectorAll(".plus, .min, select").forEach(el => {
+    el.disabled = false;
+  });
+
+  // bestelknop opnieuw uit (tot naam+klas ingevuld)
+  bestelKnop.disabled = true;
+
+  // bevestiging weg
+  statusEl.textContent = "";
+
+  // knop weer verbergen
+  nieuweBestellingKnop.style.display = "none";
+
+  // mandje-render opnieuw
+  renderMandje();
 });
 
 
