@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schoolverkoop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="top">
+    <img class="logo" src="afbeeldingen/schoollogo.png" alt="Schoollogo" />
+    <h1>Schoolverkoop</h1>
+    <p class="subtitle">Bestel eenvoudig en veilig</p>
+  </header>
+
+  <main class="layout">
+
+    <!-- PRODUCTEN -->
+    <section class="producten-blok">
+      <div id="status" class="status"></div>
+      <div id="producten" class="producten"></div>
+    </section>
+
+    <!-- MANDJE / AFREKENEN -->
+    <aside class="mandje-blok">
+      <div class="card">
+        <h2>Mijn bestelling</h2>
+
+        <!-- Stap 1: mandje -->
+        <div id="mandjeLijst" class="mandje-lijst">
+          <p class="muted">Nog geen producten gekozen.</p>
+        </div>
+
+        <!-- Stap 2: leerlinggegevens (PAS BIJ PRODUCTEN) -->
+        <div id="leerlingGegevens" class="leerling-gegevens verborgen">
+          <hr />
+
+          <label for="naamKind">Naam leerling</label>
+          <input
+            type="text"
+            id="naamKind"
+            placeholder="Naam van het kind"
+          />
+
+          <label for="klas">Klas</label>
+          <select id="klas">
+  <option value="">Kies klas</option>
+  <option>K1</option>
+  <option>K2</option>
+  <option>K3</option>
+  <option>1A</option>
+  <option>2A</option>
+  <option>3A</option>
+  <option>4A</option>
+  <option>5A</option>
+  <option>6A</option>
+</select>
+        </div>
+
+        <!-- TOTAAL -->
+        <div class="totaal">
+          <span>Totaal:</span>
+          <strong id="totaal">€ 0</strong>
+        </div>
+
+        <!-- ACTIE -->
+        <button id="bestelKnop" class="btn" disabled>
+          Bestellen (test)
+        </button>
+
+        <p class="hint">
+          Testomgeving — naam en klas worden gecontroleerd bij afrekenen
+        </p>
+      </div>
+    </aside>
+
+  </main>
+
+  <footer class="footer">© Onze school — testomgeving</footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
