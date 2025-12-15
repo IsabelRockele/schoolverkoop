@@ -715,3 +715,10 @@ downloadPdfPerKind.addEventListener("click", () => {
 // INIT
 // ============================
 laadTotaalPerProduct();
+const winstBtn = document.getElementById("openWinstBerekening");
+
+if (winstBtn) {
+  winstBtn.addEventListener("click", () => {
+    window.location.href = "winst.html";
+  });
+}
