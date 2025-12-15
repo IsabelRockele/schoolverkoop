@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schoolverkoop – Overzicht</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="top">
+    <h1>Schoolverkoop – Overzicht</h1>
+    <p class="subtitle">Interne schoolpagina</p>
+  </header>
+
+  <main class="layout">
+
+    <!-- TOTAAL PER PRODUCT (LEVERANCIERS) -->
+   <section class="card leveranciers-print">
+  <h2>Totaal per product (leveranciers)</h2>
+<button id="downloadLeveranciersPdf" class="btn secondary" style="margin-bottom:12px;">
+  Download als PDF
+</button>
+
+     <div class="leveranciers-grid">
+
+  <table class="overzicht-tabel">
+    <thead>
+      <tr>
+        <th colspan="3">Kerstrozen</th>
+      </tr>
+      <tr>
+        <th>Product</th>
+        <th>Variant</th>
+        <th>Aantal</th>
+      </tr>
+    </thead>
+    <tbody id="tabelKerstrozen"></tbody>
+  </table>
+
+  <table class="overzicht-tabel">
+    <thead>
+      <tr>
+        <th colspan="3">Truffels</th>
+      </tr>
+      <tr>
+        <th>Product</th>
+        <th>Variant</th>
+        <th>Aantal</th>
+      </tr>
+    </thead>
+    <tbody id="tabelTruffels"></tbody>
+  </table>
+
+</div>
+
+    </section>
+
+    <!-- TOTAAL PER KLAS + PDF -->
+    <section class="card">
+      <h2>Totaal per klas</h2>
+
+      <label for="klasFilter">Kies klas:</label>
+      <select id="klasFilter">
+        <option value="">— kies klas —</option>
+        <option>K1</option>
+        <option>K2</option>
+        <option>K3</option>
+        <option>1A</option>
+        <option>2A</option>
+        <option>3A</option>
+        <option>4A</option>
+        <option>5A</option>
+        <option>6A</option>
+      </select>
+
+      <button id="downloadPdfKlas" class="btn secondary" style="margin-top:10px;">
+        Download PDF per klas
+      </button>
+
+      <table id="totaalPerKlas" class="overzicht-tabel" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Variant</th>
+            <th>Aantal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- gevuld via school.js -->
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- ✅ jsPDF UMD: MOET EERST -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <!-- ✅ DAN pas onze module -->
+  <script type="module" src="school.js"></script>
+</body>
+</html>
