@@ -134,6 +134,157 @@ async function laadTotaalPerKlas(klas) {
     tabelKlas.appendChild(tr);
   });
 }
+// ============================
+// D) DATA PER KIND (ALFABETISCH + PER KOPER)
+// ============================
+async function verzamelBestellingenPerKind(klas) {
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+
+  const resultaat = {};
+  /*
+    structuur:
+    {
+      leerling: {
+        koperNaam: [
+          { naam, variant, aantal, prijs }
+        ]
+      }
+    }
+  */
+
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+
+    const leerling = d.leerling || "Onbekend";
+    const koper = d.naamKoper || "Onbekend";
+
+    if (!resultaat[leerling]) resultaat[leerling] = {};
+    if (!resultaat[leerling][koper]) resultaat[leerling][koper] = [];
+
+    d.producten.forEach(p => {
+      resultaat[leerling][koper].push({
+        naam: p.naam,
+        variant: p.variant,
+        aantal: p.aantal,
+        prijs: p.prijs
+      });
+    });
+  });
+
+  // leerlingen alfabetisch sorteren
+  const gesorteerd = {};
+  Object.keys(resultaat)
+    .sort((a, b) => a.localeCompare(b, "nl"))
+    .forEach(leerling => {
+      gesorteerd[leerling] = resultaat[leerling];
+    });
+
+  return gesorteerd;
+}
+
+// ============================
+// E) TEST: PDF VOOR ÉÉN KIND (STAAND)
+// ============================
+async function testPdfVoorEénKind(klas, leerlingNaam) {
+  const data = await verzamelBestellingenPerKind(klas);
+  const kindData = data[leerlingNaam];
+
+  if (!kindData) {
+    alert("Geen data voor dit kind.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let y = 25;
+  const marginL = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+
+  // Titel
+  pdf.setFontSize(18);
+  pdf.setFont(undefined, "bold");
+  pdf.text("Besteloverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+  y += 14;
+
+  pdf.setFontSize(11);
+  pdf.setFont(undefined, "normal");
+  pdf.text(`Leerling: ${leerlingNaam}`, marginL, y);
+  y += 7;
+  pdf.text(`Klas: ${klas}`, marginL, y);
+  y += 14;
+
+  let totaalKind = 0;
+
+  // Per koper
+  Object.keys(kindData).forEach(koper => {
+    pdf.setFont(undefined, "bold");
+    pdf.setFontSize(13);
+pdf.text(`Besteld door: ${koper}`, marginL, y);
+y += 8;
+pdf.setFontSize(11);
+
+
+    pdf.setFont(undefined, "normal");
+
+    let subtotaalKoper = 0;
+
+// 1. samenvoegen per product + variant + prijs
+const samengevoegd = {};
+
+kindData[koper].forEach(item => {
+  const sleutel = `${item.naam}|||${item.variant}|||${item.prijs}`;
+  if (!samengevoegd[sleutel]) {
+    samengevoegd[sleutel] = {
+      naam: item.naam,
+      variant: item.variant,
+      prijs: item.prijs,
+      aantal: 0
+    };
+  }
+  samengevoegd[sleutel].aantal += item.aantal;
+});
+
+// 2. nu pas uitschrijven in PDF
+Object.values(samengevoegd).forEach(item => {
+  const regelTotaal = item.aantal * item.prijs;
+  subtotaalKoper += regelTotaal;
+  totaalKind += regelTotaal;
+
+  pdf.text(
+    `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`,
+    marginL + 5,
+    y
+  );
+  y += 6.5;
+
+  if (y > 270) {
+    pdf.addPage();
+    y = 25;
+  }
+});
+
+
+    pdf.setFont(undefined, "bold");
+    pdf.setFont(undefined, "bold");
+pdf.text(`Subtotaal ${koper}: €${subtotaalKoper}`, marginL + 5, y);
+y += 12;
+pdf.setFont(undefined, "normal");
+
+  });
+
+  // Totaal kind
+  pdf.setFontSize(12);
+  pdf.setFont(undefined, "bold");
+  y += 10;
+pdf.setFontSize(13);
+pdf.setFont(undefined, "bold");
+pdf.text(`Totaal betaald: €${totaalKind}`, marginL, y);
+
+
+  pdf.save(`besteloverzicht_${leerlingNaam}_${klas}.pdf`);
+}
 
 // ============================
 // C) PDF PER KLAS
@@ -326,6 +477,9 @@ pdf.setTextColor(0, 0, 0);
 
   pdf.save(`schoolverkoop_${klas}.pdf`);
 }
+
+window.verzamelBestellingenPerKind = verzamelBestellingenPerKind;
+window.testPdfVoorEénKind = testPdfVoorEénKind;
 
 
 // ============================
