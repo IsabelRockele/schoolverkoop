@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Winstberekening schoolverkoop</title>
+
+  <!-- Eigen stijl voor winstberekening -->
+  <link rel="stylesheet" href="winst.css" />
+</head>
+<body>
+
+  <!-- =========================
+       BOVENBALK
+  ========================== -->
+  <header class="winst-header">
+    <button id="terugNaarOverzicht" class="terug-btn">
+      ← Terug naar overzicht
+    </button>
+
+    <h1>📊 Winstberekening schoolverkoop</h1>
+    <p class="subtitel">Op basis van Bancontact (Mollie)</p>
+  </header>
+
+  <!-- =========================
+       SAMENVATTING
+  ========================== -->
+  <section class="winst-samenvatting">
+    <div class="samenvatting-blok">
+      <span class="label">Totale omzet</span>
+      <span class="waarde" id="totaleOmzet">—</span>
+    </div>
+
+    <div class="samenvatting-blok">
+      <span class="label">Aantal bestellingen</span>
+      <span class="waarde" id="aantalBestellingen">—</span>
+    </div>
+
+    <div class="samenvatting-blok">
+      <span class="label">Totale Mollie-kosten</span>
+      <span class="waarde" id="totaleMollieKosten">—</span>
+    </div>
+  </section>
+
+  <!-- =========================
+       INSTELLINGEN
+  ========================== -->
+  <section class="winst-instellingen">
+
+    <!-- Mollie-kost -->
+    <div class="instelling-blok">
+      <label for="mollieKost">
+        Mollie-kost per bestelling (€)
+      </label>
+      <input
+        type="number"
+        step="0.01"
+        id="mollieKost"
+        value="0.39"
+      />
+      <p class="hint">
+        Vaste Bancontact-kost via Mollie
+      </p>
+    </div>
+
+    <!-- Inkoopprijzen per product -->
+    <div class="inkoopprijzen">
+      <h2>Inkoopprijzen per product</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Verkoopprijs</th>
+            <th>Verkocht</th>
+            <th>Inkoopprijs / stuk (€)</th>
+          </tr>
+        </thead>
+        <tbody id="inkoopTabelBody">
+          <!-- Rijen worden later via JS ingevuld -->
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- =========================
+       RESULTAAT
+  ========================== -->
+  <section class="winst-resultaat">
+    <h2>💰 Resultaat</h2>
+
+    <div class="resultaat-regel">
+      <span>Totale omzet</span>
+      <span id="resultaatOmzet">—</span>
+    </div>
+
+    <div class="resultaat-regel">
+      <span>Totale inkoop</span>
+      <span id="resultaatInkoop">—</span>
+    </div>
+
+    <div class="resultaat-regel">
+      <span>Mollie-kosten</span>
+      <span id="resultaatMollie">—</span>
+    </div>
+
+    <div class="resultaat-totaal">
+      <span>Netto winst</span>
+      <span id="resultaatWinst">—</span>
+    </div>
+  </section>
+
+  <!-- =========================
+       ACTIES
+  ========================== -->
+  <footer class="winst-acties">
+    <button id="downloadWinstPdf">
+      🖨️ Download winstoverzicht (PDF)
+    </button>
+  </footer>
+
+  <!-- Logica volgt later -->
+  <script src="winst.js"></script>
+</body>
+</html>
