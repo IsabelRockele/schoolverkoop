@@ -215,16 +215,27 @@ bestelKnop.addEventListener("click", async () => {
   };
 
   try {
-    await addDoc(collection(db, "bestellingen_test"), bestelling);
-    alert("Bestelling succesvol opgeslagen (test).");
+  await addDoc(collection(db, "bestellingen_test"), bestelling);
 
-    // reset mandje
-    mandje = {};
-    updateBestelling();
-    renderProducten();
+// 🔒 VERGRENDELEN NA OPSLAAN
+alert("Dank je! Je bestelling is goed ontvangen.");
 
-    naamKindInput.value = "";
-    klasSelect.value = "";
+// mandje leeg
+mandje = {};
+renderMandje();
+
+// invoervelden blokkeren
+naamKindInput.disabled = true;
+klasSelect.disabled = true;
+
+// bestelknop blokkeren
+bestelKnop.disabled = true;
+
+// alle + en − knoppen uitschakelen
+document.querySelectorAll(".plus, .min, select").forEach(el => {
+  el.disabled = true;
+});
+
 
   } catch (error) {
     console.error("Fout bij opslaan bestelling:", error);
