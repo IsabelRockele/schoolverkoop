@@ -1,0 +1,353 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+// 🔹 Firebase configuratie
+const firebaseConfig = {
+  apiKey: "AIzaSyD4Pd3z6WpGbDwtpKV5glvrvJ5Ks-qCPz0",
+  authDomain: "schoolverkoop-3d82d.firebaseapp.com",
+  projectId: "schoolverkoop-3d82d",
+  storageBucket: "schoolverkoop-3d82d.firebasestorage.app",
+  messagingSenderId: "74076660432",
+  appId: "1:74076660432:web:2e94c19700a076458cb4d5"
+};
+
+// 🔹 Firebase starten
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🔹 DOM
+const tabelKerstrozen = document.getElementById("tabelKerstrozen");
+const tabelTruffels = document.getElementById("tabelTruffels");
+const klasFilter = document.getElementById("klasFilter");
+const tabelKlas = document.querySelector("#totaalPerKlas tbody");
+const downloadPdfBtn = document.getElementById("downloadPdfKlas");
+const downloadLeveranciersPdf = document.getElementById("downloadLeveranciersPdf");
+
+
+// ============================
+// A) TOTAAL PER PRODUCT (PER LEVERANCIER)
+// ============================
+async function laadTotaalPerProduct() {
+  tabelKerstrozen.innerHTML = "";
+tabelTruffels.innerHTML = "";
+
+
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+
+  // leverancier-indeling (simpel en duidelijk)
+  const leveranciers = {
+    Kerstrozen: {},
+    Truffels: {}
+  };
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    if (!Array.isArray(data.producten)) return;
+
+    data.producten.forEach(p => {
+      const isKerstroos = p.naam === "Kerstrozen";
+      const leverancier = isKerstroos ? "Kerstrozen" : "Truffels";
+
+      const key = `${p.naam}|||${p.variant}`;
+      if (!leveranciers[leverancier][key]) {
+        leveranciers[leverancier][key] = 0;
+      }
+      leveranciers[leverancier][key] += p.aantal;
+    });
+  });
+
+  // niets besteld
+  if (
+    Object.keys(leveranciers.Kerstrozen).length === 0 &&
+    Object.keys(leveranciers.Truffels).length === 0
+  ) {
+    tabelProducten.innerHTML =
+      `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
+    return;
+  }
+
+
+  // Kerstrozen
+  if (Object.keys(leveranciers.Kerstrozen).length > 0) {
+  Object.keys(leveranciers.Kerstrozen).forEach(k => {
+    const [naam, variant] = k.split("|||");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Kerstrozen[k]}</td>`;
+    tabelKerstrozen.appendChild(tr);
+  });
+}
+
+
+  // Truffels
+  if (Object.keys(leveranciers.Truffels).length > 0) {
+  Object.keys(leveranciers.Truffels).forEach(k => {
+    const [naam, variant] = k.split("|||");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels[k]}</td>`;
+    tabelTruffels.appendChild(tr);
+  });
+}
+}
+
+
+// ============================
+// B) TOTAAL PER KLAS
+// ============================
+async function laadTotaalPerKlas(klas) {
+  tabelKlas.innerHTML = "";
+
+  if (!klas) {
+    tabelKlas.innerHTML =
+      `<tr><td colspan="3" class="muted">Kies eerst een klas</td></tr>`;
+    return;
+  }
+
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const totalen = {};
+
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+
+    d.producten.forEach(p => {
+      const key = `${p.naam}|||${p.variant}`;
+      if (!totalen[key]) totalen[key] = 0;
+      totalen[key] += p.aantal;
+    });
+  });
+
+  const keys = Object.keys(totalen);
+  if (keys.length === 0) {
+    tabelKlas.innerHTML =
+      `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
+    return;
+  }
+
+  keys.forEach(k => {
+    const [naam, variant] = k.split("|||");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${totalen[k]}</td>`;
+    tabelKlas.appendChild(tr);
+  });
+}
+
+// ============================
+// C) PDF PER KLAS
+// ============================
+async function genereerPdfPerKlas(klas) {
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+
+  // =========================
+  // 1. VASTE PRODUCTSTRUCTUUR
+  // =========================
+  const productStructuur = [
+    { naam: "Kerstrozen", varianten: ["wit", "roze", "rood"] },
+    { naam: "Truffels 250 g", varianten: ["wit", "melk", "donker"] },
+    { naam: "Truffel 500 g", varianten: ["wit", "melk", "donker"] }
+  ];
+
+  const kolommen = [];
+  productStructuur.forEach(p => {
+    p.varianten.forEach(v => {
+      kolommen.push({
+        product: p.naam,
+        variant: v,
+        key: `${p.naam}|||${v}`
+      });
+    });
+  });
+
+  // =========================
+  // 2. DATA PER LEERLING
+  // =========================
+  const leerlingenSet = new Set();
+  const matrix = {};        // leerling -> key -> aantal
+  const kolomTotalen = {};  // key -> totaal
+
+  kolommen.forEach(k => (kolomTotalen[k.key] = 0));
+
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+
+    const leerling = d.leerling || "Onbekend";
+    leerlingenSet.add(leerling);
+    if (!matrix[leerling]) matrix[leerling] = {};
+
+    d.producten.forEach(p => {
+      const key = `${p.naam}|||${p.variant}`;
+      if (!matrix[leerling][key]) matrix[leerling][key] = 0;
+      matrix[leerling][key] += p.aantal;
+
+      if (kolomTotalen[key] !== undefined) {
+        kolomTotalen[key] += p.aantal;
+      }
+    });
+  });
+
+  const leerlingen = Array.from(leerlingenSet).sort((a, b) =>
+    a.localeCompare(b, "nl")
+  );
+
+  // =========================
+  // 3. PDF OPMAAK
+  // =========================
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  const marginL = 10;
+  const marginT = 15;
+  const rowH = 8;
+  const nameColW = 45;
+
+  const usableW = pageW - marginL * 2 - nameColW;
+  const colW = Math.min(24, usableW / kolommen.length);
+
+  let y = marginT;
+
+  // Titel
+  pdf.setFontSize(16);
+  pdf.setFont(undefined, "bold");
+  pdf.text(`Schoolverkoop – Klas ${klas}`, marginL, y);
+  y += 12;
+
+  pdf.setFontSize(9);
+
+  // =========================
+  // 4. KOPRIJ 1 – PRODUCT
+  // =========================
+  pdf.rect(marginL, y, nameColW, rowH);
+  pdf.text("Leerling", marginL + 2, y + 5);
+
+  kolommen.forEach((k, i) => {
+    const x = marginL + nameColW + i * colW;
+    pdf.rect(x, y, colW, rowH);
+    pdf.text(k.product, x + 1, y + 5);
+  });
+
+  y += rowH;
+
+  // =========================
+  // 5. KOPRIJ 2 – VARIANT
+  // =========================
+  pdf.rect(marginL, y, nameColW, rowH);
+
+  kolommen.forEach((k, i) => {
+    const x = marginL + nameColW + i * colW;
+    pdf.rect(x, y, colW, rowH);
+    pdf.text(k.variant, x + colW / 2, y + 5, { align: "center" });
+  });
+
+  y += rowH;
+  pdf.setFont(undefined, "normal");
+
+  // =========================
+  // 6. LEERLINGENRIJEN
+  // =========================
+  leerlingen.forEach(leerling => {
+    if (y + rowH > pageH - marginT) {
+      pdf.addPage();
+      y = marginT;
+    }
+
+    pdf.rect(marginL, y, nameColW, rowH);
+    pdf.text(leerling, marginL + 2, y + 5);
+
+    kolommen.forEach((k, i) => {
+      const x = marginL + nameColW + i * colW;
+      pdf.rect(x, y, colW, rowH);
+
+      const aantal =
+        matrix[leerling] && matrix[leerling][k.key]
+          ? String(matrix[leerling][k.key])
+          : "–";
+
+      pdf.text(aantal, x + colW / 2, y + 5, { align: "center" });
+    });
+
+    y += rowH;
+  });
+
+// =========================
+// 7. TOTAALRIJ ONDERAAN
+// =========================
+if (y + rowH > pageH - marginT) {
+  pdf.addPage();
+  y = marginT;
+}
+
+// ----------
+// LICHTGRIJZE ACHTERGROND (1 grote strook)
+// ----------
+pdf.setFillColor(230, 230, 230); // lichtgrijs
+pdf.rect(
+  marginL,
+  y,
+  nameColW + kolommen.length * colW,
+  rowH,
+  "F"
+);
+
+// ----------
+// TEKST + RASTER
+// ----------
+pdf.setDrawColor(0, 0, 0);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, "bold");
+
+// cel: TOTAAL
+pdf.rect(marginL, y, nameColW, rowH);
+pdf.text("TOTAAL", marginL + 2, y + 5);
+
+// productcellen
+kolommen.forEach((k, i) => {
+  const x = marginL + nameColW + i * colW;
+
+  pdf.rect(x, y, colW, rowH);
+
+  const totaal =
+    kolomTotalen[k.key] && kolomTotalen[k.key] > 0
+      ? String(kolomTotalen[k.key])
+      : "–";
+
+  pdf.text(totaal, x + colW / 2, y + 5, { align: "center" });
+});
+
+// reset
+pdf.setFont(undefined, "normal");
+pdf.setTextColor(0, 0, 0);
+
+  pdf.save(`schoolverkoop_${klas}.pdf`);
+}
+
+
+// ============================
+// EVENTS
+// ============================
+downloadLeveranciersPdf.addEventListener("click", () => {
+  window.print();
+});
+
+klasFilter.addEventListener("change", () => {
+  laadTotaalPerKlas(klasFilter.value);
+});
+
+downloadPdfBtn.addEventListener("click", () => {
+  if (!klasFilter.value) {
+    alert("Kies eerst een klas.");
+    return;
+  }
+  genereerPdfPerKlas(klasFilter.value);
+});
+
+// ============================
+// INIT
+// ============================
+laadTotaalPerProduct();
