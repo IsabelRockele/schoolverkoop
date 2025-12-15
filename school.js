@@ -200,6 +200,7 @@ async function testPdfVoorEénKind(klas, leerlingNaam) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   let y = 25;
+  const MAX_Y = 230; // stop vroeger, veilige witmarge onderaan
   const marginL = 20;
   const pageW = pdf.internal.pageSize.getWidth();
 
@@ -220,6 +221,26 @@ async function testPdfVoorEénKind(klas, leerlingNaam) {
 
   // Per koper
   Object.keys(kindData).forEach(koper => {
+  // schatting: hoeveel ruimte dit koperblok nodig heeft
+  const aantalRegels = Object.keys(
+    kindData[koper].reduce((acc, item) => {
+      const sleutel = `${item.naam}|||${item.variant}|||${item.prijs}`;
+      acc[sleutel] = true;
+      return acc;
+    }, {})
+  ).length;
+
+  const benodigdeHoogte =
+    8 +                // titel "Besteld door"
+    (aantalRegels * 6.5) +
+    14;                // subtotaal + ruimte
+
+  // past dit koperblok nog op deze pagina?
+  if (y + benodigdeHoogte > 270) {
+    pdf.addPage();
+    y = tekenVervolgKop();
+  }
+
     pdf.setFont(undefined, "bold");
     pdf.setFontSize(13);
 pdf.text(`Besteld door: ${koper}`, marginL, y);
@@ -262,7 +283,27 @@ Object.values(samengevoegd).forEach(item => {
 
   if (y > 270) {
     pdf.addPage();
-    y = 25;
+y = 25;
+
+// kop opnieuw tekenen op vervolgpagina
+const pageW = pdf.internal.pageSize.getWidth();
+
+pdf.setFontSize(18);
+pdf.setFont(undefined, "bold");
+pdf.text("Besteloverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+y += 10;
+
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+pdf.text(`Gegenereerd op: ${vandaag}`, pageW / 2, y, { align: "center" });
+y += 12;
+
+pdf.setFontSize(12);
+pdf.text(`Leerling: ${leerlingNaam} (vervolg)`, marginL, y);
+y += 7;
+pdf.text(`Klas: ${klas}`, marginL, y);
+y += 14;
+
   }
 });
 
@@ -281,7 +322,33 @@ pdf.setFont(undefined, "normal");
   y += 10;
 pdf.setFontSize(13);
 pdf.setFont(undefined, "bold");
+if (y > MAX_Y) {
+  pdf.addPage();
+y = 25;
+
+// kop opnieuw tekenen op vervolgpagina
+const pageW = pdf.internal.pageSize.getWidth();
+
+pdf.setFontSize(18);
+pdf.setFont(undefined, "bold");
+pdf.text("Besteloverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+y += 10;
+
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+pdf.text(`Gegenereerd op: ${vandaag}`, pageW / 2, y, { align: "center" });
+y += 12;
+
+pdf.setFontSize(12);
+pdf.text(`Leerling: ${leerlingNaam} (vervolg)`, marginL, y);
+y += 7;
+pdf.text(`Klas: ${klas}`, marginL, y);
+y += 14;
+
+}
+
 pdf.text(`Totaal betaald: €${totaalKind}`, marginL, y);
+
 
 
   pdf.save(`besteloverzicht_${leerlingNaam}_${klas}.pdf`);
@@ -307,6 +374,7 @@ async function genereerPdfPerKind(klas) {
     if (index > 0) pdf.addPage();
 
     let y = 25;
+    const MAX_Y = 240; // veilige ondermarge (printer)
     const marginL = 20;
     const pageW = pdf.internal.pageSize.getWidth();
     let totaalKind = 0;
@@ -330,7 +398,47 @@ async function genereerPdfPerKind(klas) {
 
     const kindData = data[leerlingNaam];
 
-    Object.keys(kindData).forEach(koper => {
+ Object.keys(kindData).forEach(koper => {
+
+// === vooraf check: past deze koper nog volledig? ===
+const uniekeProducten = Object.keys(
+  kindData[koper].reduce((acc, item) => {
+    const sleutel = `${item.naam}|||${item.variant}|||${item.prijs}`;
+    acc[sleutel] = true;
+    return acc;
+  }, {})
+).length;
+
+const geschatteHoogte =
+  8 +                 // titel "Besteld door"
+  (uniekeProducten * 6.5) +
+  14;                // subtotaal + witruimte
+
+if (y + geschatteHoogte > MAX_Y) {
+ pdf.addPage();
+y = 25;
+
+// kop opnieuw tekenen op vervolgpagina
+const pageW = pdf.internal.pageSize.getWidth();
+
+pdf.setFontSize(18);
+pdf.setFont(undefined, "bold");
+pdf.text("Besteloverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+y += 10;
+
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+pdf.text(`Gegenereerd op: ${vandaag}`, pageW / 2, y, { align: "center" });
+y += 12;
+
+pdf.setFontSize(12);
+pdf.text(`Leerling: ${leerlingNaam} (vervolg)`, marginL, y);
+y += 7;
+pdf.text(`Klas: ${klas}`, marginL, y);
+y += 14;
+
+}
+
       pdf.setFontSize(13);
       pdf.setFont(undefined, "bold");
       pdf.text(`Besteld door: ${koper}`, marginL, y);
@@ -366,6 +474,7 @@ async function genereerPdfPerKind(klas) {
       pdf.setFont(undefined, "bold");
       pdf.text(`Subtotaal ${koper}: €${subtotaalKoper}`, marginL + 5, y);
       y += 14;
+
     });
 
     pdf.setFontSize(13);
