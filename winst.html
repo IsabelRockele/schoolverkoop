@@ -3,148 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <title>Winstberekening schoolverkoop</title>
-
-  <!-- Eigen stijl voor winstberekening -->
   <link rel="stylesheet" href="winst.css" />
 </head>
 <body>
 
-  <!-- =========================
-       BOVENBALK
-  ========================== -->
-  <header class="winst-header">
-    <button id="terugNaarOverzicht" class="terug-btn">
-      ← Terug naar overzicht
-    </button>
+<header class="winst-header">
+  <button id="terugNaarOverzicht" class="terug-btn">← Terug naar overzicht</button>
+  <h1>📊 Winstberekening schoolverkoop</h1>
+  <p class="subtitel">Op basis van Bancontact (Mollie)</p>
+</header>
 
-    <h1>📊 Winstberekening schoolverkoop</h1>
-    <p class="subtitel">Op basis van Bancontact (Mollie)</p>
-  </header>
-
-  <!-- =========================
-       SAMENVATTING
-  ========================== -->
-  <section class="winst-samenvatting">
-    <div class="samenvatting-blok">
-      <span class="label">Totale omzet</span>
-      <span class="waarde" id="totaleOmzet">—</span>
-    </div>
-
-    <div class="samenvatting-blok">
-      <span class="label">Aantal bestellingen</span>
-      <span class="waarde" id="aantalBestellingen">—</span>
-    </div>
-
-    <div class="samenvatting-blok">
-      <span class="label">Totale Mollie-kosten</span>
-      <span class="waarde" id="totaleMollieKosten">—</span>
-    </div>
-  </section>
-
-  <!-- =========================
-       INSTELLINGEN
-  ========================== -->
-  <section class="winst-instellingen">
-
-    <!-- Mollie-kost -->
-    <div class="instelling-blok">
-      <label for="mollieKost">
-        Mollie-kost per bestelling (€)
-      </label>
-      <input
-        type="number"
-        step="0.01"
-        id="mollieKost"
-        value="0.39"
-      />
-      <p class="hint">
-        Vaste Bancontact-kost via Mollie
-      </p>
-    </div>
-
-    <div class="instelling-blok">
-  <label for="transportKost">
-    Transportkosten totaal (€)
-  </label>
-  <input
-    type="number"
-    step="0.01"
-    id="transportKost"
-    value="0"
-  />
-  <p class="hint">
-    Totale leverings- en transportkosten
-  </p>
-</div>
-
-    <!-- Inkoopprijzen per product -->
-    <div class="inkoopprijzen">
-  <h2>Inkoopprijzen per product</h2>
-
-  <div class="inkoop-grid">
-
-    <!-- TRUFFELS -->
-    <div class="inkoop-blok">
-      <h3>Truffels</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Verkoopprijs</th>
-            <th>Verkocht</th>
-            <th>Inkoopprijs / stuk (€)</th>
-          </tr>
-        </thead>
-        <tbody id="inkoopTabelBodyTruffels"></tbody>
-      </table>
-    </div>
-
-    <!-- KERSTROZEN -->
-    <div class="inkoop-blok">
-      <h3>Kerstrozen</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Verkoopprijs</th>
-            <th>Verkocht</th>
-            <th>Inkoopprijs / stuk (€)</th>
-          </tr>
-        </thead>
-        <tbody id="inkoopTabelBodyKerstrozen"></tbody>
-      </table>
-    </div>
-
+<section class="winst-samenvatting">
+  <div class="samenvatting-blok">
+    <span class="label">Totale omzet</span>
+    <span class="waarde" id="totaleOmzet">—</span>
   </div>
-</div>
+  <div class="samenvatting-blok">
+    <span class="label">Aantal bestellingen</span>
+    <span class="waarde" id="aantalBestellingen">—</span>
+  </div>
+  <div class="samenvatting-blok">
+    <span class="label">Totale Mollie-kosten</span>
+    <span class="waarde" id="totaleMollieKosten">—</span>
+  </div>
+</section>
 
-  </section>
-  
-<!-- =========================
-     DASHBOARD RIJ
-========================== -->
+<section class="winst-instellingen">
+
+  <div>
+    <div class="instelling-blok">
+      <label for="mollieKost">Mollie-kost per bestelling (€)</label>
+      <input type="number" step="0.01" id="mollieKost" value="0.39" />
+      <p class="hint">Vaste Bancontact-kost via Mollie</p>
+    </div>
+
+    <div class="instelling-blok">
+      <label for="transportKost">Transportkosten totaal (€)</label>
+      <input type="number" step="0.01" id="transportKost" value="0" />
+      <p class="hint">Totale leverings- en transportkosten</p>
+    </div>
+  </div>
+
+  <div class="inkoopprijzen">
+    <h2>Inkoopprijzen per product</h2>
+
+    <div class="inkoop-grid">
+
+      <div class="inkoop-blok">
+        <h3>Truffels</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Verkoopprijs</th>
+              <th>Verkocht</th>
+              <th>Inkoop (€)</th>
+            </tr>
+          </thead>
+          <tbody id="inkoopTabelBodyTruffels"></tbody>
+        </table>
+      </div>
+
+      <div class="inkoop-blok">
+        <h3>Kerstrozen</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Verkoopprijs</th>
+              <th>Verkocht</th>
+              <th>Inkoop (€)</th>
+            </tr>
+          </thead>
+          <tbody id="inkoopTabelBodyKerstrozen"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <div class="dashboard-rij">
 
-    <!-- =========================
-       LEVERANCIERS – TOTALE INKOOP
-  ========================== -->
   <section class="leveranciers-blok">
     <h2>📦 Leveranciers – totale inkoop</h2>
-
     <div class="leverancier-rij">
       <span>Kerstrozen</span>
       <strong id="inkoopKerstrozen">—</strong>
     </div>
-
     <div class="leverancier-rij">
       <span>Truffels</span>
       <strong id="inkoopTruffels">—</strong>
     </div>
   </section>
 
-  <!-- =========================
-       RESULTAAT
-  ========================== -->
   <section class="winst-resultaat">
     <h2>💰 Resultaat</h2>
 
@@ -152,12 +104,10 @@
       <span>Totale omzet</span>
       <span id="resultaatOmzet">—</span>
     </div>
-
     <div class="resultaat-regel">
       <span>Totale inkoop</span>
       <span id="resultaatInkoop">—</span>
     </div>
-
     <div class="resultaat-regel">
       <span>Mollie-kosten</span>
       <span id="resultaatMollie">—</span>
@@ -167,18 +117,14 @@
       <span>Netto winst</span>
       <span id="resultaatWinst">—</span>
     </div>
-  </section>
 
-  <!-- =========================
-       ACTIES
-  ========================== -->
-  <footer class="winst-acties">
-    <button id="downloadWinstPdf">
+    <button id="downloadWinstPdf" class="compact-btn">
       🖨️ Download winstoverzicht (PDF)
     </button>
-  </footer>
+  </section>
 
-  <!-- Logica volgt later -->
+</div>
+
 <script type="module" src="winst.js"></script>
 </body>
 </html>
