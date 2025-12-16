@@ -325,6 +325,7 @@ bestelKnop.addEventListener("click", async () => {
   }
 
   const bestelling = {
+    actieId: "kerstverkoop_2026",   // 👈 NIEUW (Optie A)
     leerling: naamKindInput.value.trim(),
     klas: klasSelect.value,
     naamKoper: naamKoperInput.value.trim(),
