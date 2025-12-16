@@ -30,7 +30,8 @@
 
 <section class="winst-instellingen">
 
-  <div>
+  <!-- INSTELLINGEN -->
+  <div class="instellingen-kolom">
     <div class="instelling-blok">
       <label for="mollieKost">Mollie-kost per bestelling (€)</label>
       <input type="number" step="0.01" id="mollieKost" value="0.39" />
@@ -44,11 +45,13 @@
     </div>
   </div>
 
+  <!-- INKOOPPRIJZEN -->
   <div class="inkoopprijzen">
     <h2>Inkoopprijzen per product</h2>
 
     <div class="inkoop-grid">
 
+      <!-- TRUFFELS -->
       <div class="inkoop-blok">
         <h3>Truffels</h3>
         <table>
@@ -62,8 +65,14 @@
           </thead>
           <tbody id="inkoopTabelBodyTruffels"></tbody>
         </table>
+
+        <div class="inkoop-totaal">
+          <span>Totale inkoop truffels</span>
+          <strong id="totaalInkoopTruffels">—</strong>
+        </div>
       </div>
 
+      <!-- KERSTROZEN -->
       <div class="inkoop-blok">
         <h3>Kerstrozen</h3>
         <table>
@@ -77,53 +86,42 @@
           </thead>
           <tbody id="inkoopTabelBodyKerstrozen"></tbody>
         </table>
+
+        <div class="inkoop-totaal">
+          <span>Totale inkoop kerstrozen</span>
+          <strong id="totaalInkoopKerstrozen">—</strong>
+        </div>
       </div>
 
     </div>
   </div>
 </section>
 
-<div class="dashboard-rij">
+<section class="winst-resultaat">
+  <h2>💰 Resultaat</h2>
 
-  <section class="leveranciers-blok">
-    <h2>📦 Leveranciers – totale inkoop</h2>
-    <div class="leverancier-rij">
-      <span>Kerstrozen</span>
-      <strong id="inkoopKerstrozen">—</strong>
-    </div>
-    <div class="leverancier-rij">
-      <span>Truffels</span>
-      <strong id="inkoopTruffels">—</strong>
-    </div>
-  </section>
+  <div class="resultaat-regel">
+    <span>Totale omzet</span>
+    <span id="resultaatOmzet">—</span>
+  </div>
+  <div class="resultaat-regel">
+    <span>Totale inkoop</span>
+    <span id="resultaatInkoop">—</span>
+  </div>
+  <div class="resultaat-regel">
+    <span>Mollie-kosten</span>
+    <span id="resultaatMollie">—</span>
+  </div>
 
-  <section class="winst-resultaat">
-    <h2>💰 Resultaat</h2>
+  <div class="resultaat-totaal">
+    <span>Netto winst</span>
+    <span id="resultaatWinst">—</span>
+  </div>
 
-    <div class="resultaat-regel">
-      <span>Totale omzet</span>
-      <span id="resultaatOmzet">—</span>
-    </div>
-    <div class="resultaat-regel">
-      <span>Totale inkoop</span>
-      <span id="resultaatInkoop">—</span>
-    </div>
-    <div class="resultaat-regel">
-      <span>Mollie-kosten</span>
-      <span id="resultaatMollie">—</span>
-    </div>
-
-    <div class="resultaat-totaal">
-      <span>Netto winst</span>
-      <span id="resultaatWinst">—</span>
-    </div>
-
-    <button id="downloadWinstPdf" class="compact-btn">
-      🖨️ Download winstoverzicht (PDF)
-    </button>
-  </section>
-
-</div>
+  <button id="downloadWinstPdf" class="compact-btn">
+    🖨️ Download winstoverzicht (PDF)
+  </button>
+</section>
 
 <script type="module" src="winst.js"></script>
 </body>
