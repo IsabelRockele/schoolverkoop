@@ -197,10 +197,60 @@ function renderMandje() {
     const sub = item.aantal * item.prijs;
     totaal += sub;
 
-    rij.innerHTML = `
-      <span>${item.naam} (${item.variant}) × ${item.aantal}</span>
-      <strong>€ ${sub}</strong>
-    `;
+   rij.innerHTML = `
+  <div class="mandje-links">
+    <div class="mandje-naam">
+      ${item.naam} (${item.variant})
+    </div>
+
+    <div class="qty">
+      <button class="min">−</button>
+      <span class="val">${item.aantal}</span>
+      <button class="plus">+</button>
+    </div>
+  </div>
+
+  <button class="verwijder" title="Verwijderen" aria-label="Verwijderen">
+  <svg viewBox="0 0 24 24" class="icoon-verwijder" aria-hidden="true">
+    <path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z" />
+  </svg>
+</button>
+
+
+`;
+const minBtn = rij.querySelector(".min");
+const plusBtn = rij.querySelector(".plus");
+const verwijderBtn = rij.querySelector(".verwijder");
+
+const key = Object.keys(mandje).find(
+  k =>
+    mandje[k].naam === item.naam &&
+    mandje[k].variant === item.variant
+);
+
+
+// −
+minBtn.onclick = () => {
+  item.aantal--;
+  if (item.aantal <= 0) {
+    delete mandje[key];
+  }
+  renderMandje();
+};
+
+// +
+plusBtn.onclick = () => {
+  item.aantal++;
+  renderMandje();
+};
+
+// 👉 HIER hoort het
+  verwijderBtn.onclick = () => {
+    if (!confirm("Wil je dit product verwijderen?")) return;
+    delete mandje[key];
+    renderMandje();
+  };
+
 
     mandjeEl.appendChild(rij);
   });
