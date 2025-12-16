@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mijn bestelling</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Mijn bestelling</h1>
+
+  <!-- Overzicht -->
+  <div id="mandjeLijst" class="mandje-lijst">
+    <!-- items worden hier ingevuld via JS -->
+  </div>
+
+  <!-- Formulier -->
+ <div class="bestel-formulier">
+
+  <label for="naamKind">Naam leerling</label>
+  <input type="text" id="naamKind" placeholder="Naam van het kind" />
+
+  <label for="klas">Klas</label>
+  <select id="klas">
+    <option value="">Kies klas</option>
+    <option>K1</option>
+    <option>K2</option>
+    <option>K3</option>
+    <option>1A</option>
+    <option>2A</option>
+    <option>3A</option>
+    <option>4A</option>
+    <option>5A</option>
+    <option>6A</option>
+    <option>Personeel De Linde</option>
+    <option>Atheneum Klein-Brabant</option>
+  </select>
+
+  <label for="naamKoper">Naam koper</label>
+  <input type="text" id="naamKoper" placeholder="Naam ouder / familielid" />
+
+  <label for="emailKoper">E-mailadres koper</label>
+  <input type="email" id="emailKoper" placeholder="koper@email.be" />
+
+</div>
+
+
+  <!-- Totaal -->
+  <div class="mandje-totaal">
+    <strong>Totaal:</strong>
+    <span id="mandjeTotaal">€ 0</span>
+  </div>
+
+  <button id="betaalBtn" class="betaal-btn">
+  Betalen
+</button>
+
+</div>
+
+<script type="module" src="mandje.js"></script>
+
+</body>
+</html>
