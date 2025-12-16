@@ -128,13 +128,16 @@ if (betaalBtn) {
       .reduce((som, item) => som + item.aantal * item.prijs, 0);
 
     try {
-      await addDoc(collection(db, "bestellingen_test"), {
-        leerling: { naam: naamKind, klas },
-        koper: { naam: naamKoper, email: emailKoper },
-        bestelling: mandje,
-        totaal,
-        aangemaaktOp: serverTimestamp()
-      });
+  await addDoc(collection(db, "bestellingen_test"), {
+  actieId: "kerstverkoop_2026",   // 👈 TOEVOEGEN (Optie A)
+
+  leerling: { naam: naamKind, klas },
+  koper: { naam: naamKoper, email: emailKoper },
+  bestelling: mandje,
+  totaal,
+  aangemaaktOp: serverTimestamp()
+});
+
 
       localStorage.removeItem("mandje");
 
