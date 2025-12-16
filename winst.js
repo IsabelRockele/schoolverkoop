@@ -130,7 +130,16 @@ Object.values(productenMap).forEach(p => {
     <td>€ ${p.verkoopprijs.toFixed(2).replace(".", ",")}</td>
     <td>${p.aantal}</td>
     <td>
-      <input type="number" step="0.01" placeholder="€" style="width:80px">
+     <input
+  type="number"
+  step="0.01"
+  placeholder="€"
+  class="inkoop-input"
+  data-aantal="${p.aantal}"
+  data-product="${p.product.toLowerCase()}"
+  style="width:80px"
+/>
+
     </td>
   `;
 
@@ -145,27 +154,51 @@ Object.values(productenMap).forEach(p => {
 
 
 
-// ===============================
-// INKOOP PER LEVERANCIER (totaal)
-// ===============================
-Object.values(productenMap).forEach(p => {
-  const naam = p.product.toLowerCase();
+function herberekenInkoop() {
+  let totaalTruffels = 0;
+  let totaalKerstrozen = 0;
 
-  if (naam.includes("kerstrozen")) {
-    inkoopKerstrozen += p.aantal * 3.20;   // tijdelijke prijs
-  }
+  document.querySelectorAll(".inkoop-input").forEach(input => {
+    const prijs = Number(input.value || 0);
+    const aantal = Number(input.dataset.aantal || 0);
+    const product = input.dataset.product;
 
-  if (naam.includes("truffel")) {
-    inkoopTruffels += p.aantal * 2.50;     // tijdelijke prijs
-  }
-});
-document.getElementById("inkoopKerstrozen").textContent =
-  "€ " + inkoopKerstrozen.toFixed(2).replace(".", ",");
+    const subtotaal = prijs * aantal;
 
-document.getElementById("inkoopTruffels").textContent =
-  "€ " + inkoopTruffels.toFixed(2).replace(".", ",");
- 
-  totaleInkoop = inkoopKerstrozen + inkoopTruffels;
+    if (product.includes("truffel")) {
+      totaalTruffels += subtotaal;
+    }
+
+    if (product.includes("kerstrozen")) {
+      totaalKerstrozen += subtotaal;
+    }
+  });
+
+  const totaleInkoop = totaalTruffels + totaalKerstrozen;
+
+  document.getElementById("totaalInkoopTruffels").textContent =
+    "€ " + totaalTruffels.toFixed(2).replace(".", ",");
+
+  document.getElementById("totaalInkoopKerstrozen").textContent =
+    "€ " + totaalKerstrozen.toFixed(2).replace(".", ",");
+
+  document.getElementById("resultaatInkoop").textContent =
+    "€ " + totaleInkoop.toFixed(2).replace(".", ",");
+
+  // winst herberekenen
+  const mollieKost = Number(document.getElementById("mollieKost").value || 0);
+  const transportKost = Number(document.getElementById("transportKost").value || 0);
+  const totaleMollieKosten = aantalBestellingen * mollieKost;
+
+  const winst =
+    totaleOmzet -
+    totaleInkoop -
+    totaleMollieKosten -
+    transportKost;
+
+  document.getElementById("resultaatWinst").textContent =
+    "€ " + winst.toFixed(2).replace(".", ",");
+}
 
 
 // ===============================
@@ -198,6 +231,13 @@ const winst =
 
 document.getElementById("resultaatWinst").textContent =
   "€ " + winst.toFixed(2).replace(".", ",");
+
+  // live herberekenen wanneer een inkoopprijs wordt ingevuld
+document.addEventListener("input", (e) => {
+  if (e.target.classList.contains("inkoop-input")) {
+    herberekenInkoop();
+  }
+});
 
 } catch (error) {
   console.error("Fout bij laden winstgegevens:", error);
