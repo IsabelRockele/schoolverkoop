@@ -87,31 +87,34 @@ let inkoopTruffels = 0;
 };  
 
   snapshot.forEach(doc => {
-    const data = doc.data();
-    const items = data.producten || [];
+  const data = doc.data();
 
+  // ✅ producten correct ophalen uit bestelling (nieuwe structuur)
+  const items = Object.values(data.bestelling || {});
 
-    items.forEach(item => {
-      const sleutel = `${item.naam} – ${item.variant}`;
+  items.forEach(item => {
+    const sleutel = `${item.naam} – ${item.variant}`;
 
-      if (!productenMap[sleutel]) {
-        productenMap[sleutel] = {
-          product: sleutel,
-          verkoopprijs: Number(item.prijs || 0),
-          aantal: 0
-        };
-      }
+    if (!productenMap[sleutel]) {
+      productenMap[sleutel] = {
+        product: sleutel,
+        verkoopprijs: Number(item.prijs || 0),
+        aantal: 0
+      };
+    }
 
-      productenMap[sleutel].aantal += Number(item.aantal || 0);
-      if (item.naam.toLowerCase().includes("kerstroos")) {
-  leveranciers.kerstrozen.totaalAantal += Number(item.aantal || 0);
-}
+    productenMap[sleutel].aantal += Number(item.aantal || 0);
 
-if (item.naam.toLowerCase().includes("truffel")) {
-  leveranciers.truffels.totaalAantal += Number(item.aantal || 0);
-}
-    });
+    if (item.naam.toLowerCase().includes("kerstroos")) {
+      leveranciers.kerstrozen.totaalAantal += Number(item.aantal || 0);
+    }
+
+    if (item.naam.toLowerCase().includes("truffel")) {
+      leveranciers.truffels.totaalAantal += Number(item.aantal || 0);
+    }
   });
+});
+
 
   // ===============================
   // TABEL VULLEN
@@ -188,7 +191,13 @@ function herberekenInkoop() {
   // winst herberekenen
   const mollieKost = Number(document.getElementById("mollieKost").value || 0);
   const transportKost = Number(document.getElementById("transportKost").value || 0);
+  document.getElementById("resultaatTransport").textContent =
+  "€ " + transportKost.toFixed(2).replace(".", ",");
+
   const totaleMollieKosten = aantalBestellingen * mollieKost;
+  document.getElementById("totaleMollieKosten").textContent =
+  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
+
 
   const winst =
     totaleOmzet -
@@ -208,11 +217,18 @@ const mollieKost = Number(
   document.getElementById("mollieKost").value || 0
 );
 
-const transportKost = Number(
+ const transportKost = Number(
   document.getElementById("transportKost").value || 0
 );
 
+document.getElementById("resultaatTransport").textContent =
+  "€ " + transportKost.toFixed(2).replace(".", ",");
+
+
 const totaleMollieKosten = aantalBestellingen * mollieKost;
+document.getElementById("totaleMollieKosten").textContent =
+  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
+
 
 document.getElementById("resultaatOmzet").textContent =
   "€ " + totaleOmzet.toFixed(2).replace(".", ",");
@@ -234,10 +250,15 @@ document.getElementById("resultaatWinst").textContent =
 
   // live herberekenen wanneer een inkoopprijs wordt ingevuld
 document.addEventListener("input", (e) => {
-  if (e.target.classList.contains("inkoop-input")) {
+  if (
+    e.target.classList.contains("inkoop-input") ||
+    e.target.id === "transportKost" ||
+    e.target.id === "mollieKost"
+  ) {
     herberekenInkoop();
   }
 });
+
 
 } catch (error) {
   console.error("Fout bij laden winstgegevens:", error);
