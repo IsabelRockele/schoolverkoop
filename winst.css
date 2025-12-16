@@ -5,15 +5,11 @@ body {
   color: #222;
 }
 
+/* HEADER */
 .winst-header {
   background: #fff;
   padding: 12px 24px;
   border-bottom: 1px solid #ddd;
-}
-
-.winst-header h1 {
-  margin-top: 6px;
-  font-size: 22px;
 }
 
 .subtitel {
@@ -21,6 +17,7 @@ body {
   color: #666;
 }
 
+/* SAMENVATTING */
 .winst-samenvatting {
   display: flex;
   gap: 12px;
@@ -40,6 +37,7 @@ body {
   font-weight: bold;
 }
 
+/* INSTELLINGEN + INKOOP */
 .winst-instellingen {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -48,11 +46,15 @@ body {
 }
 
 .instelling-blok {
-  background: #fff;
+  background: #eef3f8;
   padding: 10px;
-  border: 1px solid #ddd;
   border-radius: 6px;
   margin-bottom: 12px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #555;
 }
 
 .inkoop-grid {
@@ -61,6 +63,7 @@ body {
   gap: 20px;
 }
 
+/* TABELLEN */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -74,18 +77,23 @@ th, td {
   border-bottom: 1px solid #ddd;
 }
 
-.dashboard-rij {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 12px 24px;
+/* TOTAAL PER PRODUCT */
+.inkoop-totaal {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f1f3f5;
+  border-radius: 6px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
 }
 
-.leveranciers-blok,
+/* RESULTAAT */
 .winst-resultaat {
-  background: #fff;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
+  margin: 12px 24px;
+  padding: 14px 18px;
+  background-color: #ffffff;
+  border: 2px solid #cce5cc;
   border-radius: 8px;
 }
 
@@ -106,6 +114,7 @@ th, td {
   color: #2e7d32;
 }
 
+/* KNOP */
 .compact-btn {
   margin-top: 10px;
   padding: 8px 12px;
