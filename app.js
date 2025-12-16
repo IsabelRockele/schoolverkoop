@@ -29,19 +29,32 @@ const productenData = [
     id: "truffel500",
     naam: "Truffel 500 g",
     prijs: 6,
-    varianten: ["wit", "melk", "donker"]
+    varianten: [
+  { code: "wit", img: "afbeeldingen/wit.png" },
+  { code: "melk", img: "afbeeldingen/melk.png" },
+  { code: "donker", img: "afbeeldingen/donker.png" }
+]
   },
   {
     id: "truffel250",
     naam: "Truffels 250 g",
     prijs: 4,
-    varianten: ["wit", "melk", "donker"]
+    varianten: [
+  { code: "wit", img: "afbeeldingen/wit.png" },
+  { code: "melk", img: "afbeeldingen/melk.png" },
+  { code: "donker", img: "afbeeldingen/donker.png" }
+]
   },
   {
     id: "kerstrozen",
     naam: "Kerstrozen",
     prijs: 6,
-    varianten: ["wit", "rood", "roze"]
+    varianten: [
+  { code: "wit", img: "afbeeldingen/wit.png" },
+  { code: "rood", img: "afbeeldingen/rood.png" },
+  { code: "roze", img: "afbeeldingen/roze.png" }
+]
+
   }
 ];
 
@@ -68,7 +81,7 @@ const productControls = [];
 
 statusEl.textContent = "";
 
-// 🔹 PRODUCTEN TONEN
+// 🔹 PRODUCTEN TONEN — per variant eigen teller
 productenData.forEach(product => {
   const card = document.createElement("div");
   card.className = "product-card";
@@ -76,77 +89,85 @@ productenData.forEach(product => {
   card.innerHTML = `
     <h3 class="product-title">${product.naam}</h3>
     <p><strong>Prijs:</strong> € ${product.prijs}</p>
-
-    <div class="product-row">
-      <label>
-        Variant:
-        <select>
-          ${product.varianten.map(v => `<option value="${v}">${v}</option>`).join("")}
-        </select>
-      </label>
-
-      <div class="qty">
-        <button class="min">−</button>
-        <span class="val">0</span>
-        <button class="plus">+</button>
-      </div>
-    </div>
+    <div class="varianten"></div>
   `;
 
-  const minBtn = card.querySelector(".min");
-  const plusBtn = card.querySelector(".plus");
-  const valEl = card.querySelector(".val");
-  const variantEl = card.querySelector("select");
-variantEl.addEventListener("change", () => {
-  if (bestellingVergrendeld) return;
-  update();
-});
+  const variantenContainer = card.querySelector(".varianten");
 
-  let aantal = 0;
-  // Optie C: reset kunnen uitvoeren bij "Nieuwe bestelling"
-  productControls.push({
-    reset: () => {
-      aantal = 0;
+  product.varianten.forEach(variantObj => {
+  const variant = variantObj.code;
+
+    let aantal = 0;
+
+    const rij = document.createElement("div");
+    rij.className = "variant-tegel";
+
+
+    rij.innerHTML = `
+  <img src="${variantObj.img}" alt="${variant}" class="variant-img" />
+
+  <div class="variant-lijn">
+    <span class="variant-naam">${variant}</span>
+    <div class="qty">
+      <button class="min">−</button>
+      <span class="val">0</span>
+      <button class="plus">+</button>
+    </div>
+  </div>
+`;
+
+
+    const minBtn = rij.querySelector(".min");
+    const plusBtn = rij.querySelector(".plus");
+    const valEl = rij.querySelector(".val");
+
+    function update() {
+      valEl.textContent = aantal;
+
+      const key = `${product.id}_${variant}`;
+
+      if (aantal > 0) {
+        mandje[key] = {
+          naam: product.naam,
+          variant,
+          aantal,
+          prijs: product.prijs
+        };
+      } else {
+        delete mandje[key];
+      }
+
+      renderMandje();
+    }
+
+    minBtn.onclick = () => {
+      if (bestellingVergrendeld) return;
+      if (aantal > 0) {
+        aantal--;
+        update();
+      }
+    };
+
+    plusBtn.onclick = () => {
+      if (bestellingVergrendeld) return;
+      aantal++;
       update();
-    }
+    };
+
+    // reset-mogelijkheid voor "Nieuwe bestelling"
+    productControls.push({
+      reset: () => {
+        aantal = 0;
+        update();
+      }
+    });
+
+    variantenContainer.appendChild(rij);
   });
-
-  function update() {
-    valEl.textContent = aantal;
-
-    const key = product.id + "_" + variantEl.value;
-
-    if (aantal > 0) {
-      mandje[key] = {
-        naam: product.naam,
-        variant: variantEl.value,
-        aantal,
-        prijs: product.prijs
-      };
-    } else {
-      delete mandje[key];
-    }
-
-    renderMandje();
-  }
-
- minBtn.onclick = () => {
-  if (bestellingVergrendeld) return;
-  if (aantal > 0) {
-    aantal--;
-    update();
-  }
-};
-
-
- plusBtn.onclick = () => {
-  if (bestellingVergrendeld) return;
-  aantal++;
-  update();
-};
 
   productenEl.appendChild(card);
 });
+
 
 // 🔹 MANDJE TONEN + OPTIE B LOGICA
 function renderMandje() {
