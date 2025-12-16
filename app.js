@@ -127,17 +127,36 @@ productenData.forEach(product => {
       const key = `${product.id}_${variant}`;
 
       if (aantal > 0) {
-        mandje[key] = {
-          naam: product.naam,
-          variant,
-          aantal,
-          prijs: product.prijs
-        };
+     mandje[key] = {
+  key,              // ✅ BELANGRIJK
+  naam: product.naam,
+  variant,
+  aantal,
+  prijs: product.prijs
+};
+
       } else {
         delete mandje[key];
       }
 
       renderMandje();
+      // 🔔 KORTE BEVESTIGING "toegevoegd aan winkelmandje"
+  const toast = document.getElementById("toast");
+  if (toast) {
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2000);
+  }
+
+  // 🛒 TELLER IN ZWEVENDE KNOP BIJWERKEN (tel uit mandje, niet uit DOM)
+const mandjeAantal = document.getElementById("mandjeAantal");
+if (mandjeAantal) {
+  const totaalAantal = Object.values(mandje).reduce((som, it) => som + (it.aantal || 0), 0);
+  mandjeAantal.textContent = `(${totaalAantal})`;
+}
+
+  // 💾 mandje opslaan voor mandje.html
+localStorage.setItem("mandje", JSON.stringify(mandje));
+
     }
 
     minBtn.onclick = () => {
@@ -222,34 +241,40 @@ const minBtn = rij.querySelector(".min");
 const plusBtn = rij.querySelector(".plus");
 const verwijderBtn = rij.querySelector(".verwijder");
 
-const key = Object.keys(mandje).find(
-  k =>
-    mandje[k].naam === item.naam &&
-    mandje[k].variant === item.variant
-);
+const key = item.key;
 
 
 // −
 minBtn.onclick = () => {
+  if (bestellingVergrendeld) return;
+
   item.aantal--;
   if (item.aantal <= 0) {
     delete mandje[key];
   }
+  localStorage.setItem("mandje", JSON.stringify(mandje));
   renderMandje();
 };
 
 // +
 plusBtn.onclick = () => {
+  if (bestellingVergrendeld) return;
+
   item.aantal++;
+  localStorage.setItem("mandje", JSON.stringify(mandje));
   renderMandje();
 };
 
-// 👉 HIER hoort het
-  verwijderBtn.onclick = () => {
-    if (!confirm("Wil je dit product verwijderen?")) return;
-    delete mandje[key];
-    renderMandje();
-  };
+// verwijderen
+verwijderBtn.onclick = () => {
+  if (bestellingVergrendeld) return;
+
+  if (!confirm("Wil je dit product verwijderen?")) return;
+  delete mandje[key];
+  localStorage.setItem("mandje", JSON.stringify(mandje));
+  renderMandje();
+};
+
 
 
     mandjeEl.appendChild(rij);
@@ -397,4 +422,8 @@ nieuweBestellingKnop.addEventListener("click", () => {
   renderMandje();
 });
 
+// Klik op winkelmandje -> open nieuw venster
+document.getElementById("mandjeBtn").addEventListener("click", () => {
+  window.location.href = "mandje.html";
+});
 
