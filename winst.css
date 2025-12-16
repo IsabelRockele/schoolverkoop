@@ -1,267 +1,122 @@
-/* =========================
-   ALGEMEEN
-========================= */
-
 body {
   margin: 0;
-  padding: 0;
   font-family: Arial, Helvetica, sans-serif;
   background-color: #f5f6f7;
   color: #222;
 }
 
-h1, h2 {
-  margin: 0;
-}
-
-h2 {
-  margin-bottom: 10px;
-}
-
-button {
-  font-size: 14px;
-  padding: 8px 14px;
-  cursor: pointer;
-}
-
-/* =========================
-   BOVENBALK
-========================= */
-
 .winst-header {
-  background-color: #ffffff;
-  padding: 20px 30px;
+  background: #fff;
+  padding: 12px 24px;
   border-bottom: 1px solid #ddd;
 }
 
 .winst-header h1 {
-  margin-top: 10px;
+  margin-top: 6px;
   font-size: 22px;
 }
 
-.winst-header .subtitel {
-  margin-top: 4px;
+.subtitel {
   font-size: 13px;
   color: #666;
 }
 
-.terug-btn {
-  background: none;
-  border: none;
-  color: #0066cc;
-  padding: 0;
-  font-size: 14px;
-}
-
-.terug-btn:hover {
-  text-decoration: underline;
-}
-
-/* =========================
-   SAMENVATTING
-========================= */
-
 .winst-samenvatting {
   display: flex;
-  gap: 20px;
-  padding: 20px 30px;
+  gap: 12px;
+  padding: 12px 24px;
 }
 
 .samenvatting-blok {
   flex: 1;
-  background-color: #ffffff;
-  padding: 15px;
-  border-radius: 6px;
+  background: #fff;
+  padding: 10px;
   border: 1px solid #ddd;
-}
-
-.samenvatting-blok .label {
-  display: block;
-  font-size: 13px;
-  color: #666;
+  border-radius: 6px;
 }
 
 .samenvatting-blok .waarde {
-  display: block;
-  margin-top: 6px;
   font-size: 20px;
   font-weight: bold;
 }
 
-/* =========================
-   INSTELLINGEN
-========================= */
-
 .winst-instellingen {
-  padding: 20px 30px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  padding: 12px 24px;
 }
 
 .instelling-blok {
-  background-color: #ffffff;
-  padding: 15px;
+  background: #fff;
+  padding: 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  max-width: 300px;
-  margin-bottom: 25px;
+  margin-bottom: 12px;
 }
 
-.instelling-blok label {
-  display: block;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.instelling-blok input {
-  width: 100%;
-  padding: 6px;
-  font-size: 14px;
-}
-
-.instelling-blok .hint {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* =========================
-   INKOOPPRIJZEN TABEL
-========================= */
-
-.inkoopprijzen h2 {
-  margin-bottom: 10px;
+.inkoop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #ffffff;
+  background: #fff;
   border: 1px solid #ddd;
 }
 
-thead {
-  background-color: #f0f0f0;
-}
-
 th, td {
-  padding: 8px 10px;
+  padding: 6px 8px;
+  font-size: 13px;
   border-bottom: 1px solid #ddd;
-  text-align: left;
-  font-size: 14px;
 }
 
-th {
-  font-weight: bold;
+.dashboard-rij {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 12px 24px;
 }
 
-td input {
-  width: 90px;
-  padding: 4px;
-  font-size: 14px;
-}
-
-/* =========================
-   RESULTAAT
-========================= */
-
+.leveranciers-blok,
 .winst-resultaat {
-  margin: 30px;
-  padding: 20px;
-  background-color: #ffffff;
-  border: 2px solid #cce5cc;
-  border-radius: 6px;
+  background: #fff;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
 }
 
 .resultaat-regel {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
-  font-size: 14px;
+  padding: 2px 0;
 }
 
 .resultaat-totaal {
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid #ccc;
   font-size: 18px;
   font-weight: bold;
   color: #2e7d32;
 }
 
-/* =========================
-   ACTIES
-========================= */
-
-.winst-acties {
-  padding: 20px 30px;
-  text-align: right;
-}
-
-.winst-acties button {
-  background-color: #0066cc;
-  color: #ffffff;
+.compact-btn {
+  margin-top: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #0066cc;
+  color: #fff;
   border: none;
   border-radius: 4px;
+  cursor: pointer;
 }
 
-.winst-acties button:hover {
-  background-color: #004f9e;
-}
-.leveranciers-blok {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-
-  padding: 16px 20px;   /* compacter, maar nog “kaart” */
-  margin: 0;            /* mag blijven 0 binnen dashboard-rij */
-}
-
-.leveranciers-blok h2 {
-  margin-bottom: 10px;  /* minder ruimte onder titel */
-}
-
-.leverancier-rij {
-  padding: 4px 0;       /* compacter per rij */
-}
-
-.leverancier-rij {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  font-size: 15px;
-}
-.winst-instellingen {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-.dashboard-rij {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 20px;
-}
-
-@media (max-width: 900px) {
-  .dashboard-rij {
-    grid-template-columns: 1fr;
-  }
-}
-.inkoop-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 10px;
-}
-
-@media (max-width: 1000px) {
-  .inkoop-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.inkoop-blok h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+.compact-btn:hover {
+  background: #004f9e;
 }
