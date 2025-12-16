@@ -40,6 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Basisgegevens laden
   laadBasisGegevens();
 });
+  // 📄 Download winstoverzicht (PDF)
+  const downloadBtn = document.getElementById("downloadWinstPdf");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", downloadWinstPdf);
+  }
+
 
 // ===============================
 // BASISGEGEVENS OPHALEN
@@ -263,4 +269,71 @@ document.addEventListener("input", (e) => {
 } catch (error) {
   console.error("Fout bij laden winstgegevens:", error);
 }
+}
+function downloadWinstPdf() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  let y = 20;
+
+  pdf.setFontSize(16);
+  pdf.text("Winstoverzicht schoolverkoop", 105, y, { align: "center" });
+  y += 10;
+
+  pdf.setFontSize(10);
+  pdf.text(
+    "Datum: " + new Date().toLocaleDateString("nl-BE"),
+    105,
+    y,
+    { align: "center" }
+  );
+  y += 15;
+
+// Samenvatting titel
+pdf.setFontSize(14);
+pdf.setFont(undefined, "bold");
+pdf.text("Samenvatting", 14, y);
+y += 10;
+
+pdf.setFontSize(11);
+pdf.setFont(undefined, "normal");
+
+// Totale omzet
+pdf.text("Totale omzet", 14, y);
+pdf.text(document.getElementById("resultaatOmzet").textContent, 190, y, { align: "right" });
+y += 7;
+
+// Totale inkoop (met verduidelijking)
+pdf.text("Totale inkoop (truffels en kerstrozen)", 14, y);
+pdf.text(document.getElementById("resultaatInkoop").textContent, 190, y, { align: "right" });
+y += 7;
+
+// Mollie-kosten
+pdf.text("Mollie-kosten", 14, y);
+pdf.text(document.getElementById("resultaatMollie").textContent, 190, y, { align: "right" });
+y += 7;
+
+// Transportkosten
+pdf.text("Transportkosten", 14, y);
+pdf.text(document.getElementById("resultaatTransport").textContent, 190, y, { align: "right" });
+y += 5;
+
+// Lijn onder transportkosten
+pdf.setDrawColor(180);
+pdf.line(14, y, 190, y);
+y += 10;
+
+// Netto winst (opvallend)
+pdf.setFontSize(14);
+pdf.setFont(undefined, "bold");
+pdf.setTextColor(46, 125, 50); // groen
+
+pdf.text("Netto winst", 14, y);
+pdf.text(document.getElementById("resultaatWinst").textContent, 190, y, { align: "right" });
+
+// Reset stijl
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, "normal");
+
+  pdf.save("winstoverzicht_schoolverkoop.pdf");
 }
