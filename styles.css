@@ -134,14 +134,7 @@ select, input{
   border-top:1px solid var(--line);
   padding-top:12px;
 }
-.mandje-item{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  padding:8px 0;
-  border-bottom:1px dashed var(--line);
-  font-size:14px;
-}
+
 .muted{ color:var(--muted); margin:0; }
 
 .totaal{
@@ -306,4 +299,98 @@ select, input{
   justify-content: center;
   gap: 6px;
 }
+
+.mandje-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mandje-naam {
+  font-weight: 500;
+}
+
+/* linkerzijde mag groeien */
+.mandje-links {
+  flex: 1;
+}
+
+
+.verwijder {
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  flex-shrink: 0;       /* 🔑 MAG NIET KRIMPEN */
+  width: 44px;          /* vaste kolom */
+  min-width: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+}
+
+
+.icoon-verwijder {
+  width: 22px;
+  height: 22px;
+
+  fill: #c00000; /* 🔴 expliciet rood */
+  transition: transform 0.15s ease, fill 0.15s ease;
+}
+
+.verwijder:hover .icoon-verwijder {
+  fill: #ff0000;
+  transform: scale(1.1);
+}
+
+
+/* ===============================
+   Mandje – definitieve layout
+   =============================== */
+
+.mandje-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 14px;
+}
+
+/* linkerzijde neemt alle ruimte */
+.mandje-links {
+  flex: 1;
+  min-width: 0;
+}
+
+/* vaste kolom voor vuilbakje */
+.verwijder {
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  width: 48px;
+  min-width: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* rood icoon */
+.icoon-verwijder {
+  width: 22px;
+  height: 22px;
+  fill: #c00000;
+}
+
+.verwijder:hover .icoon-verwijder {
+  fill: #ff0000;
+  transform: scale(1.1);
+}
+
+
 
