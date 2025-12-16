@@ -88,24 +88,35 @@ th, td {
   justify-content: space-between;
 }
 
-/* RESULTAAT */
 .winst-resultaat {
   margin: 12px 24px;
   padding: 14px 18px;
   background-color: #ffffff;
   border: 2px solid #cce5cc;
   border-radius: 8px;
+
+  max-width: 400px;   /* 👈 DIT is de sleutel */
 }
 
+
 .resultaat-regel {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 12px;
   padding: 2px 0;
 }
 
+.resultaat-regel span:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .resultaat-totaal {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 12px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #ccc;
@@ -113,6 +124,12 @@ th, td {
   font-weight: bold;
   color: #2e7d32;
 }
+
+.resultaat-totaal span:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 
 /* KNOP */
 .compact-btn {
