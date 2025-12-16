@@ -50,9 +50,9 @@ const productenData = [
     naam: "Kerstrozen",
     prijs: 6,
     varianten: [
-  { code: "wit", img: "afbeeldingen/wit.png" },
-  { code: "rood", img: "afbeeldingen/rood.png" },
-  { code: "roze", img: "afbeeldingen/roze.png" }
+  { code: "wit", img: "afbeeldingen/kerstroos_wit.png" },
+  { code: "rood", img: "afbeeldingen/kerstroos_rood.png" },
+  { code: "roze", img: "afbeeldingen/kerstroos_roze.png" }
 ]
 
   }
