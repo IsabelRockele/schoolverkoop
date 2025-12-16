@@ -1,3 +1,7 @@
+function haalProductenUitBestelling(data) {
+  return Object.values(data.bestelling || {});
+}
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
@@ -46,30 +50,35 @@ tabelTruffels.innerHTML = "";
   };
 
   snapshot.forEach(doc => {
-    const data = doc.data();
-    if (!Array.isArray(data.producten)) return;
+  const data = doc.data();
+  const producten = haalProductenUitBestelling(data);
 
-    data.producten.forEach(p => {
-      const isKerstroos = p.naam === "Kerstrozen";
-      const leverancier = isKerstroos ? "Kerstrozen" : "Truffels";
+  producten.forEach(p => {
+    const leverancier =
+      p.naam === "Kerstrozen" ? "Kerstrozen" : "Truffels";
 
-      const key = `${p.naam}|||${p.variant}`;
-      if (!leveranciers[leverancier][key]) {
-        leveranciers[leverancier][key] = 0;
-      }
-      leveranciers[leverancier][key] += p.aantal;
-    });
+    const key = `${p.naam}|||${p.variant}`;
+    leveranciers[leverancier][key] =
+      (leveranciers[leverancier][key] || 0) + p.aantal;
   });
+});
+
 
   // niets besteld
   if (
-    Object.keys(leveranciers.Kerstrozen).length === 0 &&
-    Object.keys(leveranciers.Truffels).length === 0
-  ) {
-    tabelProducten.innerHTML =
-      `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
-    return;
-  }
+  Object.keys(leveranciers.Kerstrozen).length === 0
+) {
+  tabelKerstrozen.innerHTML =
+    `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
+}
+
+if (
+  Object.keys(leveranciers.Truffels).length === 0
+) {
+  tabelTruffels.innerHTML =
+    `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
+}
+
 
 
   // Kerstrozen
@@ -111,15 +120,17 @@ async function laadTotaalPerKlas(klas) {
   const totalen = {};
 
   snapshot.forEach(doc => {
-    const d = doc.data();
-    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+  const data = doc.data();
+  if (data.leerling?.klas !== klas) return;
 
-    d.producten.forEach(p => {
-      const key = `${p.naam}|||${p.variant}`;
-      if (!totalen[key]) totalen[key] = 0;
-      totalen[key] += p.aantal;
-    });
+  const producten = haalProductenUitBestelling(data);
+
+  producten.forEach(p => {
+    const key = `${p.naam}|||${p.variant}`;
+    totalen[key] = (totalen[key] || 0) + p.aantal;
   });
+});
+
 
   const keys = Object.keys(totalen);
   if (keys.length === 0) {
@@ -154,24 +165,31 @@ async function verzamelBestellingenPerKind(klas) {
   */
 
   snapshot.forEach(doc => {
-    const d = doc.data();
-    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+  const d = doc.data();
 
-    const leerling = d.leerling || "Onbekend";
-    const koper = d.naamKoper || "Onbekend";
+  // ✅ juiste klas controleren
+  if (d.leerling?.klas !== klas) return;
 
-    if (!resultaat[leerling]) resultaat[leerling] = {};
-    if (!resultaat[leerling][koper]) resultaat[leerling][koper] = [];
+  // ✅ juiste namen ophalen
+  const leerling = d.leerling?.naam || "Onbekend";
+  const koper = d.koper?.naam || "Onbekend";
 
-    d.producten.forEach(p => {
-      resultaat[leerling][koper].push({
-        naam: p.naam,
-        variant: p.variant,
-        aantal: p.aantal,
-        prijs: p.prijs
-      });
+  if (!resultaat[leerling]) resultaat[leerling] = {};
+  if (!resultaat[leerling][koper]) resultaat[leerling][koper] = [];
+
+  // ✅ producten uit bestelling halen
+  const producten = haalProductenUitBestelling(d);
+
+  producten.forEach(p => {
+    resultaat[leerling][koper].push({
+      naam: p.naam,
+      variant: p.variant,
+      aantal: p.aantal,
+      prijs: p.prijs
     });
   });
+});
+
 
   // leerlingen alfabetisch sorteren
   const gesorteerd = {};
@@ -188,6 +206,7 @@ async function verzamelBestellingenPerKind(klas) {
 // E) TEST: PDF VOOR ÉÉN KIND (STAAND)
 // ============================
 async function testPdfVoorEénKind(klas, leerlingNaam) {
+   const vandaag = new Date().toLocaleDateString("nl-BE");
   const data = await verzamelBestellingenPerKind(klas);
   const kindData = data[leerlingNaam];
 
@@ -520,24 +539,31 @@ async function genereerPdfPerKlas(klas) {
 
   kolommen.forEach(k => (kolomTotalen[k.key] = 0));
 
-  snapshot.forEach(doc => {
-    const d = doc.data();
-    if (d.klas !== klas || !Array.isArray(d.producten)) return;
+ snapshot.forEach(doc => {
+  const d = doc.data();
 
-    const leerling = d.leerling || "Onbekend";
-    leerlingenSet.add(leerling);
-    if (!matrix[leerling]) matrix[leerling] = {};
+  // ✅ juiste klas filteren
+  if (d.leerling?.klas !== klas) return;
 
-    d.producten.forEach(p => {
-      const key = `${p.naam}|||${p.variant}`;
-      if (!matrix[leerling][key]) matrix[leerling][key] = 0;
-      matrix[leerling][key] += p.aantal;
+  // ✅ leerlingnaam ophalen
+  const leerling = d.leerling?.naam || "Onbekend";
+  leerlingenSet.add(leerling);
+  if (!matrix[leerling]) matrix[leerling] = {};
 
-      if (kolomTotalen[key] !== undefined) {
-        kolomTotalen[key] += p.aantal;
-      }
-    });
+  // ✅ producten uit bestelling halen
+  const producten = haalProductenUitBestelling(d);
+
+  producten.forEach(p => {
+    const key = `${p.naam}|||${p.variant}`;
+    if (!matrix[leerling][key]) matrix[leerling][key] = 0;
+    matrix[leerling][key] += p.aantal;
+
+    if (kolomTotalen[key] !== undefined) {
+      kolomTotalen[key] += p.aantal;
+    }
   });
+});
+
 
   const leerlingen = Array.from(leerlingenSet).sort((a, b) =>
     a.localeCompare(b, "nl")
