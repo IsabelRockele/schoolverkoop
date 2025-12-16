@@ -6,8 +6,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+
+// 🔹 Actieve verkoopactie
+const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
 // 🔹 Firebase configuratie
 const firebaseConfig = {
@@ -41,7 +47,13 @@ async function laadTotaalPerProduct() {
 tabelTruffels.innerHTML = "";
 
 
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await getDocs(
+  query(
+    collection(db, "bestellingen_test"),
+    where("actieId", "==", ACTIEVE_ACTIE)
+  )
+);
+
 
   // leverancier-indeling (simpel en duidelijk)
   const leveranciers = {
@@ -116,7 +128,13 @@ async function laadTotaalPerKlas(klas) {
     return;
   }
 
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await getDocs(
+  query(
+    collection(db, "bestellingen_test"),
+    where("actieId", "==", ACTIEVE_ACTIE)
+  )
+);
+
   const totalen = {};
 
   snapshot.forEach(doc => {
@@ -150,7 +168,13 @@ async function laadTotaalPerKlas(klas) {
 // D) DATA PER KIND (ALFABETISCH + PER KOPER)
 // ============================
 async function verzamelBestellingenPerKind(klas) {
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+ const snapshot = await getDocs(
+  query(
+    collection(db, "bestellingen_test"),
+    where("actieId", "==", ACTIEVE_ACTIE)
+  )
+);
+
 
   const resultaat = {};
   /*
