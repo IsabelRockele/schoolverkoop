@@ -429,3 +429,282 @@ select, input{
     margin-top: 6px;
   }
 }
+/* ===============================
+   MOBIEL – duidelijke compactheid
+   =============================== */
+@media (max-width: 900px) {
+
+  /* Header */
+  h1 {
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  /* Kaarten */
+  .card,
+  .product-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* Producttitel */
+  .product-title {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  /* Prijs */
+  .product-card p {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  /* Varianten */
+  .varianten {
+    gap: 6px;
+  }
+
+  .variant-img {
+    width: 48px;
+    margin-bottom: 4px;
+  }
+
+  .variant-naam {
+    font-size: 13px;
+  }
+
+  .qty button {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+
+  .qty .val {
+    font-size: 13px;
+  }
+
+  /* Mandje */
+  .mandje-blok h2 {
+    font-size: 18px;
+  }
+
+  .mandje-lijst {
+    font-size: 14px;
+  }
+}
+/* ===============================
+   MOBIEL – ZEER DUIDELIJK ANDERS
+   =============================== */
+@media (max-width: 900px) {
+
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 22px !important;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .card,
+  .product-card {
+    padding: 10px !important;
+    border-radius: 10px;
+  }
+
+  .product-title {
+    font-size: 16px !important;
+  }
+
+  .product-card p {
+    font-size: 12px;
+  }
+
+  .varianten {
+    grid-template-columns: repeat(3, 1fr); /* 🔥 MEER OP ÉÉN RIJ */
+    gap: 6px;
+  }
+
+  .variant-img {
+    width: 42px;
+  }
+
+  .variant-naam {
+    font-size: 12px;
+  }
+
+  .qty button {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  .qty .val {
+    font-size: 12px;
+  }
+
+  .mandje-blok h2 {
+    font-size: 16px;
+  }
+}
+/* ===============================
+   MOBIEL – PRODUCTEN ALS LIJST
+   =============================== */
+@media (max-width: 900px) {
+
+  /* Varianten worden een lijst */
+  .varianten {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Elke variant wordt een rij */
+  .variant-tegel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  /* Afbeelding klein links */
+  .variant-img {
+    width: 40px;
+    margin: 0 10px 0 0;
+    flex-shrink: 0;
+  }
+
+  /* Linkerzijde: afbeelding + naam */
+  .variant-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  /* Naam compacter */
+  .variant-naam {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Teller rechts, compact */
+  .variant-tegel .qty {
+    gap: 4px;
+  }
+
+  .qty button {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  .qty .val {
+    font-size: 12px;
+    min-width: 14px;
+  }
+}
+.container {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.mandje-lijst {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.mandje-rij {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.bestel-formulier label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.bestel-formulier input,
+.bestel-formulier select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.mandje-totaal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  margin: 20px 0;
+}
+
+.betaal-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+}
+/* TIJDELIJK: mandje verbergen op productpagina */
+.mandje-blok {
+  display: none;
+}
+/* --- Zwevende knop --- */
+.mandje-floating {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 20px;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+.mandje-floating span { font-weight: 400; }
+
+/* --- Toastmelding --- */
+.toast {
+  visibility: hidden;
+  min-width: 220px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.toast.show {
+  visibility: visible;
+  opacity: 0.9;
+}
+.mandje-subtotaal {
+  font-weight: 600;
+  margin-top: 4px;
+}
