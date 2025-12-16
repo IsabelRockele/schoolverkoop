@@ -7,8 +7,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
 
 // 🔹 Firebase configuratie (IDENTIEK aan school.js)
 const firebaseConfig = {
@@ -23,6 +26,9 @@ const firebaseConfig = {
 // Firebase starten
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// 🔹 Actieve verkoopactie (verborgen filter)
+const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
 // ===============================
 // PAGINA GELADEN
@@ -52,7 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===============================
 async function laadBasisGegevens() {
   try {
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+ const snapshot = await getDocs(
+  query(
+    collection(db, "bestellingen_test"),
+    where("actieId", "==", ACTIEVE_ACTIE)
+  )
+);
+
 
 let totaleOmzet = 0;
 let aantalBestellingen = 0;
