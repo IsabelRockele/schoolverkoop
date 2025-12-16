@@ -48,8 +48,13 @@ async function laadBasisGegevens() {
   try {
   const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
-  let totaleOmzet = 0;
-  let aantalBestellingen = 0;
+let totaleOmzet = 0;
+let aantalBestellingen = 0;
+let totaleInkoop = 0;
+const productenMap = {};
+let inkoopKerstrozen = 0;
+let inkoopTruffels = 0;
+
 
   snapshot.forEach(doc => {
     const data = doc.data();
@@ -68,7 +73,18 @@ async function laadBasisGegevens() {
   // ===============================
   // PRODUCTEN SAMENVOEGEN
   // ===============================
-  const productenMap = {};
+  const leveranciers = {
+  kerstrozen: {
+    naam: "Kerstrozen",
+    totaalAantal: 0,
+    inkoopPerStuk: 0
+  },
+  truffels: {
+    naam: "Truffels",
+    totaalAantal: 0,
+    inkoopPerStuk: 0
+  }
+};  
 
   snapshot.forEach(doc => {
     const data = doc.data();
@@ -87,29 +103,101 @@ async function laadBasisGegevens() {
       }
 
       productenMap[sleutel].aantal += Number(item.aantal || 0);
+      if (item.naam.toLowerCase().includes("kerstroos")) {
+  leveranciers.kerstrozen.totaalAantal += Number(item.aantal || 0);
+}
+
+if (item.naam.toLowerCase().includes("truffel")) {
+  leveranciers.truffels.totaalAantal += Number(item.aantal || 0);
+}
     });
   });
 
   // ===============================
   // TABEL VULLEN
   // ===============================
-  const tbody = document.getElementById("inkoopTabelBody");
-  tbody.innerHTML = "";
+  const tbodyTruffels = document.getElementById("inkoopTabelBodyTruffels");
+const tbodyKerstrozen = document.getElementById("inkoopTabelBodyKerstrozen");
 
-  Object.values(productenMap).forEach(p => {
-    const tr = document.createElement("tr");
+tbodyTruffels.innerHTML = "";
+tbodyKerstrozen.innerHTML = "";
 
-    tr.innerHTML = `
-      <td>${p.product}</td>
-      <td>€ ${p.verkoopprijs.toFixed(2).replace(".", ",")}</td>
-      <td>${p.aantal}</td>
-      <td>
-        <input type="number" step="0.01" placeholder="€" style="width:80px">
-      </td>
-    `;
+Object.values(productenMap).forEach(p => {
+  const tr = document.createElement("tr");
 
-    tbody.appendChild(tr);
-  });
+  tr.innerHTML = `
+    <td>${p.product}</td>
+    <td>€ ${p.verkoopprijs.toFixed(2).replace(".", ",")}</td>
+    <td>${p.aantal}</td>
+    <td>
+      <input type="number" step="0.01" placeholder="€" style="width:80px">
+    </td>
+  `;
+
+  const naam = p.product.toLowerCase();
+
+  if (naam.includes("truffel")) {
+    tbodyTruffels.appendChild(tr);
+  } else if (naam.includes("kerstrozen")) {
+    tbodyKerstrozen.appendChild(tr);
+  }
+});
+
+
+
+// ===============================
+// INKOOP PER LEVERANCIER (totaal)
+// ===============================
+Object.values(productenMap).forEach(p => {
+  const naam = p.product.toLowerCase();
+
+  if (naam.includes("kerstrozen")) {
+    inkoopKerstrozen += p.aantal * 3.20;   // tijdelijke prijs
+  }
+
+  if (naam.includes("truffel")) {
+    inkoopTruffels += p.aantal * 2.50;     // tijdelijke prijs
+  }
+});
+document.getElementById("inkoopKerstrozen").textContent =
+  "€ " + inkoopKerstrozen.toFixed(2).replace(".", ",");
+
+document.getElementById("inkoopTruffels").textContent =
+  "€ " + inkoopTruffels.toFixed(2).replace(".", ",");
+ 
+  totaleInkoop = inkoopKerstrozen + inkoopTruffels;
+
+
+// ===============================
+// RESULTAAT BEREKENEN (1x)
+// ===============================
+const mollieKost = Number(
+  document.getElementById("mollieKost").value || 0
+);
+
+const transportKost = Number(
+  document.getElementById("transportKost").value || 0
+);
+
+const totaleMollieKosten = aantalBestellingen * mollieKost;
+
+document.getElementById("resultaatOmzet").textContent =
+  "€ " + totaleOmzet.toFixed(2).replace(".", ",");
+
+document.getElementById("resultaatMollie").textContent =
+  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
+
+document.getElementById("resultaatInkoop").textContent =
+  "€ " + totaleInkoop.toFixed(2).replace(".", ",");
+
+const winst =
+  totaleOmzet -
+  totaleInkoop -
+  totaleMollieKosten -
+  transportKost;
+
+document.getElementById("resultaatWinst").textContent =
+  "€ " + winst.toFixed(2).replace(".", ",");
 
 } catch (error) {
   console.error("Fout bij laden winstgegevens:", error);
