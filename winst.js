@@ -1,8 +1,7 @@
 // ===============================
-// WINST.JS – SIMPELE STARTVERSIE
+// WINST.JS – PER PRODUCT + PDF
 // ===============================
 
-// Firebase (zelfde manier als in school.js)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
@@ -12,8 +11,7 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-
-// 🔹 Firebase configuratie (IDENTIEK aan school.js)
+// 🔹 Firebase configuratie (identiek aan jouw huidige)
 const firebaseConfig = {
   apiKey: "AIzaSyD4Pd3z6WpGbDwtpKV5glvrvJ5Ks-qCPz0",
   authDomain: "schoolverkoop-3d82d.firebaseapp.com",
@@ -23,19 +21,72 @@ const firebaseConfig = {
   appId: "1:74076660432:web:2e94c19700a076458cb4d5"
 };
 
-// Firebase starten
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔹 Actieve verkoopactie (verborgen filter)
+// 🔹 Actieve verkoopactie
 const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
+// localStorage keys
+const LS_SETTINGS = `winst_${ACTIEVE_ACTIE}_settings`;
+const LS_INKOOP = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
+
+// State
+let aantalBestellingen = 0;
+let totaleOmzet = 0;
+let productenLijst = []; // {key, leverancier, productLabel, verkoopprijs, aantal, omzet}
+let inkoopMap = {};      // key -> inkoop/stuk (number)
+
+// Samengevat winstoverzicht per leverancier (voor PDF & UI)
+let winstOverzicht = {
+  truffels: { omzet: 0, inkoop: 0, winst: 0 },
+  kerstrozen: { omzet: 0, inkoop: 0, winst: 0 }
+};
+
 // ===============================
-// PAGINA GELADEN
+// Helpers
+// ===============================
+function euro(n) {
+  const v = Number(n || 0);
+  return "€ " + v.toFixed(2).replace(".", ",");
+}
+
+function leverancierVanItem(naamLower) {
+  if (naamLower.includes("truffel")) return "Truffels";
+  if (naamLower.includes("kerstroos") || naamLower.includes("kerstrozen")) return "Kerstrozen";
+  return "Onbekend";
+}
+
+function loadLocal() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}");
+    if (typeof s.mollieKost !== "undefined") document.getElementById("mollieKost").value = s.mollieKost;
+    if (typeof s.transportKost !== "undefined") document.getElementById("transportKost").value = s.transportKost;
+  } catch {}
+
+  try {
+    inkoopMap = JSON.parse(localStorage.getItem(LS_INKOOP) || "{}") || {};
+  } catch {
+    inkoopMap = {};
+  }
+}
+
+function saveLocalSettings() {
+  const mollieKost = Number(document.getElementById("mollieKost").value || 0);
+  const transportKost = Number(document.getElementById("transportKost").value || 0);
+  localStorage.setItem(LS_SETTINGS, JSON.stringify({ mollieKost, transportKost }));
+}
+
+function saveLocalInkoop() {
+  localStorage.setItem(LS_INKOOP, JSON.stringify(inkoopMap || {}));
+}
+
+// ===============================
+// Init
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
 
-  // 🔙 Terug naar overzicht
+  // terugknop
   const terugBtn = document.getElementById("terugNaarOverzicht");
   if (terugBtn) {
     terugBtn.addEventListener("click", () => {
@@ -43,309 +94,535 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Basisgegevens laden
-  laadBasisGegevens();
-});
-  // 📄 Download winstoverzicht (PDF)
+  // pdf knop
   const downloadBtn = document.getElementById("downloadWinstPdf");
   if (downloadBtn) {
     downloadBtn.addEventListener("click", downloadWinstPdf);
   }
 
+  // load local values
+  loadLocal();
+
+  // live herberekenen bij wijziging van kosten
+  document.getElementById("mollieKost").addEventListener("input", () => {
+    saveLocalSettings();
+    herberekenAlles();
+  });
+  document.getElementById("transportKost").addEventListener("input", () => {
+    saveLocalSettings();
+    herberekenAlles();
+  });
+
+  // data laden
+  laadBasisGegevens();
+});
 
 // ===============================
-// BASISGEGEVENS OPHALEN
+// Data ophalen & tabel bouwen
 // ===============================
 async function laadBasisGegevens() {
   try {
- const snapshot = await getDocs(
-  query(
-    collection(db, "bestellingen_test"),
-    where("actieId", "==", ACTIEVE_ACTIE)
-  )
-);
+    const snapshot = await getDocs(
+      query(
+        collection(db, "bestellingen_test"),
+        where("actieId", "==", ACTIEVE_ACTIE)
+      )
+    );
 
+    // totals
+    totaleOmzet = 0;
+    aantalBestellingen = 0;
 
-let totaleOmzet = 0;
-let aantalBestellingen = 0;
-let totaleInkoop = 0;
-const productenMap = {};
-let inkoopKerstrozen = 0;
-let inkoopTruffels = 0;
+    // map per productKey
+    const map = {}; // key -> {leverancier, productLabel, verkoopprijs, aantal}
 
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      aantalBestellingen++;
+      totaleOmzet += Number(data.totaal || 0);
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    aantalBestellingen++;
-    totaleOmzet += Number(data.totaal || 0);
-  });
+      const items = Object.values(data.bestelling || {});
+      items.forEach(item => {
+        const naam = (item.naam || "").toString();
+        const variant = (item.variant || "").toString();
+        const prijs = Number(item.prijs || 0);
+        const aantal = Number(item.aantal || 0);
 
-  document.getElementById("totaleOmzet").textContent =
-    "€ " + totaleOmzet.toFixed(2).replace(".", ",");
+        const leverancier = leverancierVanItem(naam.toLowerCase());
+        const productLabel = variant ? `${naam} – ${variant}` : naam;
+        const key = productLabel.toLowerCase(); // stabiele sleutel
 
-  document.getElementById("aantalBestellingen").textContent =
-    aantalBestellingen;
+        if (!map[key]) {
+          map[key] = { key, leverancier, productLabel, verkoopprijs: prijs, aantal: 0 };
+        }
+        map[key].aantal += aantal;
 
-  document.getElementById("totaleMollieKosten").textContent = "—";
+        // als verkoopprijs ooit 0 was, maar later wel gevuld: pak de laatste niet-0
+        if (prijs > 0) map[key].verkoopprijs = prijs;
+      });
+    });
 
-  // ===============================
-  // PRODUCTEN SAMENVOEGEN
-  // ===============================
-  const leveranciers = {
-  kerstrozen: {
-    naam: "Kerstrozen",
-    totaalAantal: 0,
-    inkoopPerStuk: 0
-  },
-  truffels: {
-    naam: "Truffels",
-    totaalAantal: 0,
-    inkoopPerStuk: 0
+    // naar lijst, sorteren per leverancier/product
+    productenLijst = Object.values(map).map(p => ({
+      ...p,
+      omzet: p.verkoopprijs * p.aantal
+    })).sort((a, b) => {
+      if (a.leverancier !== b.leverancier) return a.leverancier.localeCompare(b.leverancier);
+      return a.productLabel.localeCompare(b.productLabel);
+    });
+
+    // samenvatting bovenaan
+    document.getElementById("totaleOmzet").textContent = euro(totaleOmzet);
+    document.getElementById("aantalBestellingen").textContent = String(aantalBestellingen);
+
+    // tabel renderen
+    renderWinstPerProductTabel();
+
+    // eerste berekening
+    herberekenAlles();
+
+  } catch (error) {
+    console.error("Fout bij laden winstgegevens:", error);
+    alert("Fout bij laden winstgegevens. Kijk in de console (F12) voor details.");
   }
-};  
+}
 
-  snapshot.forEach(doc => {
-  const data = doc.data();
+function renderWinstPerProductTabel() {
+  const tbody = document.getElementById("winstPerProductBody");
+  tbody.innerHTML = "";
 
-  // ✅ producten correct ophalen uit bestelling (nieuwe structuur)
-  const items = Object.values(data.bestelling || {});
+  const perLeverancier = {};
 
-  items.forEach(item => {
-    const sleutel = `${item.naam} – ${item.variant}`;
-
-    if (!productenMap[sleutel]) {
-      productenMap[sleutel] = {
-        product: sleutel,
-        verkoopprijs: Number(item.prijs || 0),
-        aantal: 0
-      };
+  // producten groeperen
+  productenLijst.forEach(p => {
+    if (!perLeverancier[p.leverancier]) {
+      perLeverancier[p.leverancier] = [];
     }
-
-    productenMap[sleutel].aantal += Number(item.aantal || 0);
-
-    if (item.naam.toLowerCase().includes("kerstroos")) {
-      leveranciers.kerstrozen.totaalAantal += Number(item.aantal || 0);
-    }
-
-    if (item.naam.toLowerCase().includes("truffel")) {
-      leveranciers.truffels.totaalAantal += Number(item.aantal || 0);
-    }
-  });
-});
-
-
-  // ===============================
-  // TABEL VULLEN
-  // ===============================
-  const tbodyTruffels = document.getElementById("inkoopTabelBodyTruffels");
-const tbodyKerstrozen = document.getElementById("inkoopTabelBodyKerstrozen");
-
-tbodyTruffels.innerHTML = "";
-tbodyKerstrozen.innerHTML = "";
-
-Object.values(productenMap).forEach(p => {
-  const tr = document.createElement("tr");
-
-  tr.innerHTML = `
-    <td>${p.product}</td>
-    <td>€ ${p.verkoopprijs.toFixed(2).replace(".", ",")}</td>
-    <td>${p.aantal}</td>
-    <td>
-     <input
-  type="number"
-  step="0.01"
-  placeholder="€"
-  class="inkoop-input"
-  data-aantal="${p.aantal}"
-  data-product="${p.product.toLowerCase()}"
-  style="width:80px"
-/>
-
-    </td>
-  `;
-
-  const naam = p.product.toLowerCase();
-
-  if (naam.includes("truffel")) {
-    tbodyTruffels.appendChild(tr);
-  } else if (naam.includes("kerstrozen")) {
-    tbodyKerstrozen.appendChild(tr);
-  }
-});
-
-
-
-function herberekenInkoop() {
-  let totaalTruffels = 0;
-  let totaalKerstrozen = 0;
-
-  document.querySelectorAll(".inkoop-input").forEach(input => {
-    const prijs = Number(input.value || 0);
-    const aantal = Number(input.dataset.aantal || 0);
-    const product = input.dataset.product;
-
-    const subtotaal = prijs * aantal;
-
-    if (product.includes("truffel")) {
-      totaalTruffels += subtotaal;
-    }
-
-    if (product.includes("kerstrozen")) {
-      totaalKerstrozen += subtotaal;
-    }
+    perLeverancier[p.leverancier].push(p);
   });
 
-  const totaleInkoop = totaalTruffels + totaalKerstrozen;
+  // per leverancier renderen
+  Object.keys(perLeverancier).forEach(leverancier => {
+    // --- HEADER ---
+    const header = document.createElement("tr");
+    header.className = "leverancier-header";
+    header.innerHTML = `
+      <td colspan="8">📦 ${leverancier}</td>
+    `;
+    tbody.appendChild(header);
 
-  document.getElementById("totaalInkoopTruffels").textContent =
-    "€ " + totaalTruffels.toFixed(2).replace(".", ",");
+    let subtotaalOmzet = 0;
+    let subtotaalInkoop = 0;
+    let subtotaalWinst = 0;
 
-  document.getElementById("totaalInkoopKerstrozen").textContent =
-    "€ " + totaalKerstrozen.toFixed(2).replace(".", ",");
+    // --- PRODUCTEN ---
+    perLeverancier[leverancier].forEach(p => {
+      const inkoopStuk = Number(inkoopMap[p.key] || 0);
+      const totaleInkoop = inkoopStuk * p.aantal;
+      const winst = p.omzet - totaleInkoop;
 
-  document.getElementById("resultaatInkoop").textContent =
-    "€ " + totaleInkoop.toFixed(2).replace(".", ",");
+      subtotaalOmzet += p.omzet;
+      subtotaalInkoop += totaleInkoop;
+      subtotaalWinst += winst;
 
-  // winst herberekenen
-  const mollieKost = Number(document.getElementById("mollieKost").value || 0);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.leverancier}</td>
+        <td>${p.productLabel}</td>
+        <td class="num">${euro(p.verkoopprijs)}</td>
+        <td class="num">${p.aantal}</td>
+        <td class="num">${euro(p.omzet)}</td>
+        <td class="num">
+          <input
+            class="inkoop-input"
+            type="number"
+            step="0.01"
+            value="${inkoopStuk ? inkoopStuk.toFixed(2) : ""}"
+            data-key="${p.key}"
+          />
+        </td>
+        <td class="num">${euro(totaleInkoop)}</td>
+        <td class="num">${euro(winst)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // --- SUBTOTAAL ---
+    const subtotaal = document.createElement("tr");
+    subtotaal.className = "subtotaal-rij";
+    subtotaal.innerHTML = `
+      <td colspan="4" class="label">Subtotaal ${leverancier}</td>
+      <td class="num">${euro(subtotaalOmzet)}</td>
+      <td></td>
+      <td class="num">${euro(subtotaalInkoop)}</td>
+      <td class="num">${euro(subtotaalWinst)}</td>
+    `;
+    tbody.appendChild(subtotaal);
+  });
+
+  // listeners opnieuw koppelen
+  document.querySelectorAll(".inkoop-input").forEach(inp => {
+    inp.addEventListener("input", (e) => {
+      const key = e.target.dataset.key;
+      inkoopMap[key] = Number(e.target.value || 0);
+      saveLocalInkoop();
+
+      // 🔁 tabel + berekeningen volledig verversen
+      renderWinstPerProductTabel();
+      herberekenAlles();
+    });
+  });
+}
+
+// ===============================
+// HERBEREKEN ALLES
+// ===============================
+function herberekenAlles() {
+  let totaalInkoop = 0;
+
+  let omzetTruffels = 0;
+  let inkoopTruffels = 0;
+  let winstTruffels = 0;
+
+  let omzetKerstrozen = 0;
+  let inkoopKerstrozen = 0;
+  let winstKerstrozen = 0;
+
+  let bestProduct = null;
+
+  productenLijst.forEach(p => {
+    const inkoopStuk = Number(inkoopMap[p.key] || 0);
+    const totaleInkoopProduct = inkoopStuk * p.aantal;
+    const winstProduct = p.omzet - totaleInkoopProduct;
+
+    totaalInkoop += totaleInkoopProduct;
+
+    if (p.leverancier === "Truffels") {
+      omzetTruffels += p.omzet;
+      inkoopTruffels += totaleInkoopProduct;
+      winstTruffels += winstProduct;
+    }
+
+    if (p.leverancier === "Kerstrozen") {
+      omzetKerstrozen += p.omzet;
+      inkoopKerstrozen += totaleInkoopProduct;
+      winstKerstrozen += winstProduct;
+    }
+
+    if (!bestProduct || winstProduct > bestProduct.winst) {
+      bestProduct = { label: p.productLabel, winst: winstProduct };
+    }
+  });
+
+  const mollieKostPerBestelling = Number(document.getElementById("mollieKost").value || 0);
   const transportKost = Number(document.getElementById("transportKost").value || 0);
-  document.getElementById("resultaatTransport").textContent =
-  "€ " + transportKost.toFixed(2).replace(".", ",");
+  const totaleMollieKosten = aantalBestellingen * mollieKostPerBestelling;
 
-  const totaleMollieKosten = aantalBestellingen * mollieKost;
-  document.getElementById("totaleMollieKosten").textContent =
-  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
+  // bovenste samenvatting
+  document.getElementById("totaleMollieKosten").textContent = euro(totaleMollieKosten);
 
 
-  const winst =
-    totaleOmzet -
-    totaleInkoop -
-    totaleMollieKosten -
-    transportKost;
+  // resultaatblok links
+  document.getElementById("resultaatOmzet").textContent = euro(totaleOmzet);
+  document.getElementById("resultaatInkoop").textContent = euro(totaalInkoop);
+  document.getElementById("resultaatMollie").textContent = euro(totaleMollieKosten);
+  document.getElementById("resultaatTransport").textContent = euro(transportKost);
 
-  document.getElementById("resultaatWinst").textContent =
-    "€ " + winst.toFixed(2).replace(".", ",");
-}
+  const nettoWinst = totaleOmzet - totaalInkoop - totaleMollieKosten - transportKost;
+  document.getElementById("resultaatWinst").textContent = euro(nettoWinst);
 
-
-// ===============================
-// RESULTAAT BEREKENEN (1x)
-// ===============================
-const mollieKost = Number(
-  document.getElementById("mollieKost").value || 0
-);
-
- const transportKost = Number(
-  document.getElementById("transportKost").value || 0
-);
-
-document.getElementById("resultaatTransport").textContent =
-  "€ " + transportKost.toFixed(2).replace(".", ",");
-
-
-const totaleMollieKosten = aantalBestellingen * mollieKost;
-document.getElementById("totaleMollieKosten").textContent =
-  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
-
-
-document.getElementById("resultaatOmzet").textContent =
-  "€ " + totaleOmzet.toFixed(2).replace(".", ",");
-
-document.getElementById("resultaatMollie").textContent =
-  "€ " + totaleMollieKosten.toFixed(2).replace(".", ",");
-
-document.getElementById("resultaatInkoop").textContent =
-  "€ " + totaleInkoop.toFixed(2).replace(".", ",");
-
-const winst =
-  totaleOmzet -
-  totaleInkoop -
-  totaleMollieKosten -
-  transportKost;
-
-document.getElementById("resultaatWinst").textContent =
-  "€ " + winst.toFixed(2).replace(".", ",");
-
-  // live herberekenen wanneer een inkoopprijs wordt ingevuld
-document.addEventListener("input", (e) => {
-  if (
-    e.target.classList.contains("inkoop-input") ||
-    e.target.id === "transportKost" ||
-    e.target.id === "mollieKost"
-  ) {
-    herberekenInkoop();
+  // hint meest winstgevend product
+  const hint = document.getElementById("topWinstHint");
+  if (bestProduct) {
+    hint.textContent = `Meeste winst per product: ${bestProduct.label} (${euro(bestProduct.winst)})`;
   }
-});
+  // ⬇️ waarden beschikbaar maken voor PDF
+winstOverzicht.truffels = {
+  omzet: omzetTruffels,
+  inkoop: inkoopTruffels,
+  winst: winstTruffels
+};
 
+winstOverzicht.kerstrozen = {
+  omzet: omzetKerstrozen,
+  inkoop: inkoopKerstrozen,
+  winst: winstKerstrozen
+};
 
-} catch (error) {
-  console.error("Fout bij laden winstgegevens:", error);
 }
-}
+
+// ===============================
+// PDF
+// ===============================
 function downloadWinstPdf() {
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
 
-  let y = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
 
+  const marginL = 14;
+  const marginR = 14;
+  const marginT = 16;
+  const marginB = 16;
+
+  let y = marginT;
+
+  function newPageIfNeeded(extra = 0) {
+    if (y + extra > pageH - marginB) {
+      pdf.addPage();
+      y = marginT;
+    }
+  }
+
+  // Titel
   pdf.setFontSize(16);
-  pdf.text("Winstoverzicht schoolverkoop", 105, y, { align: "center" });
-  y += 10;
+  pdf.text("Winstoverzicht schoolverkoop", pageW / 2, y, { align: "center" });
+  y += 7;
 
   pdf.setFontSize(10);
-  pdf.text(
-    "Datum: " + new Date().toLocaleDateString("nl-BE"),
-    105,
-    y,
-    { align: "center" }
-  );
-  y += 15;
+  pdf.text(`Actie: ${ACTIEVE_ACTIE}`, pageW / 2, y, { align: "center" });
+  y += 5;
+  pdf.text("Datum: " + new Date().toLocaleDateString("nl-BE"), pageW / 2, y, { align: "center" });
+  y += 10;
 
-// Samenvatting titel
-pdf.setFontSize(14);
+  
+  // Winst per leverancier (compact)
+  pdf.setFontSize(11);
+  pdf.setFont(undefined, "bold");
+  newPageIfNeeded(8);
+
+// ===============================
+// TOTALEN PER LEVERANCIER – 2 KOLOMMEN
+// ===============================
+newPageIfNeeded(30);
+
+const colGap = 10;
+const colW = (pageW - marginL - marginR - colGap) / 2;
+
+const leftX = marginL;
+const rightX = marginL + colW + colGap;
+const boxHLeveranciers = 28;
+
+
+// -------- Kerstrozen --------
+pdf.setFillColor(250, 250, 250);
+pdf.setDrawColor(180);
+pdf.roundedRect(leftX, y, colW, boxHLeveranciers, 3, 3, "FD");
+
 pdf.setFont(undefined, "bold");
-pdf.text("Samenvatting", 14, y);
-y += 10;
+pdf.setFontSize(12);
+pdf.text("Kerstrozen", leftX + 6, y + 8);
 
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+
+let ky = y + 14;
+const valXLeft = leftX + colW - 10;
+
+pdf.text("Omzet", leftX + 6, ky);
+pdf.text(euro(winstOverzicht.kerstrozen.omzet), valXLeft, ky, { align: "right" });
+ky += 5;
+
+pdf.text("Inkoop", leftX + 6, ky);
+pdf.text(euro(winstOverzicht.kerstrozen.inkoop), valXLeft, ky, { align: "right" });
+ky += 5;
+
+pdf.text("Winst", leftX + 6, ky);
+pdf.text(euro(winstOverzicht.kerstrozen.winst), valXLeft, ky, { align: "right" });
+
+// -------- Truffels --------
+pdf.setFillColor(250, 250, 250);
+pdf.setDrawColor(180);
+pdf.roundedRect(rightX, y, colW, boxHLeveranciers, 3, 3, "FD");
+
+pdf.setFont(undefined, "bold");
+pdf.setFontSize(12);
+pdf.text("Truffels", rightX + 6, y + 8);
+
+pdf.setFontSize(10);
+pdf.setFont(undefined, "normal");
+
+let ty = y + 14;
+const valXRight = rightX + colW - 10;
+
+pdf.text("Omzet", rightX + 6, ty);
+pdf.text(euro(winstOverzicht.truffels.omzet), valXRight, ty, { align: "right" });
+ty += 5;
+
+pdf.text("Inkoop", rightX + 6, ty);
+pdf.text(euro(winstOverzicht.truffels.inkoop), valXRight, ty, { align: "right" });
+ty += 5;
+
+pdf.text("Winst", rightX + 6, ty);
+pdf.text(euro(winstOverzicht.truffels.winst), valXRight, ty, { align: "right" });
+
+y += boxHLeveranciers + 10;
+
+  y += 4;
+
+  // Tabel: winst per product
+  newPageIfNeeded(12);
+  pdf.setFont(undefined, "bold");
+  pdf.setFontSize(11);
+  pdf.text("Winst per product", marginL, y);
+  y += 6;
+
+  // Kolommen (a4 breedte: 210mm)
+  pdf.setFontSize(9);
+  pdf.setFont(undefined, "bold");
+
+  const xLev = marginL;
+  const xProd = 44;
+  const xAantal = 108;
+  const xOmzet = 132;
+  const xInkoop = 160;
+  const xWinst = 196;
+
+  function headerRow() {
+    newPageIfNeeded(8);
+    pdf.setFont(undefined, "bold");
+    pdf.text("Lev.", xLev, y);
+pdf.text("Product", xProd, y);
+pdf.text("Aantal", xAantal, y, { align: "right" });
+pdf.text("Omzet", xOmzet, y, { align: "right" });
+pdf.text("Inkoop", xInkoop, y, { align: "right" });
+pdf.text("Winst", xWinst, y, { align: "right" });
+
+    y += 4;
+    pdf.setDrawColor(210);
+    pdf.line(marginL, y, pageW - marginR, y);
+    y += 4;
+  }
+
+
+  pdf.setFont(undefined, "normal");
+
+  // producten groeperen per leverancier
+const perLevPdf = {
+  Kerstrozen: [],
+  Truffels: []
+};
+
+productenLijst.forEach(p => {
+  if (perLevPdf[p.leverancier]) {
+    perLevPdf[p.leverancier].push(p);
+  }
+});
+
+Object.keys(perLevPdf).forEach(levNaam => {
+  if (!perLevPdf[levNaam].length) return;
+
+  // Leverancierstitel
+  newPageIfNeeded(12);
+  pdf.setFont(undefined, "bold");
+  pdf.setFontSize(11);
+  pdf.text(levNaam, marginL, y);
+  y += 6;
+
+  headerRow();
+  pdf.setFont(undefined, "normal");
+
+  perLevPdf[levNaam].forEach(p => {
+    const inkoopStuk = Number(inkoopMap[p.key] || 0);
+    const totaleInkoopProduct = inkoopStuk * p.aantal;
+    const winstProduct = p.omzet - totaleInkoopProduct;
+
+    if (y > pageH - marginB - 10) {
+      pdf.addPage();
+      y = marginT;
+      headerRow();
+    }
+
+    const prod = p.productLabel.length > 48
+      ? p.productLabel.slice(0, 47) + "…"
+      : p.productLabel;
+
+    pdf.text(levNaam === "Kerstrozen" ? "K" : "T", xLev, y);
+    pdf.text(prod, xProd, y);
+    pdf.text(String(p.aantal), xAantal, y, { align: "right" });
+    pdf.text(euro(p.omzet), xOmzet, y, { align: "right" });
+    pdf.text(euro(totaleInkoopProduct), xInkoop, y, { align: "right" });
+    pdf.text(euro(winstProduct), xWinst, y, { align: "right" });
+
+    y += 5;
+  });
+
+  y += 6;
+});
+
+// ===============================
+// GROTE SAMENVATTING IN KADER
+// ===============================
+newPageIfNeeded(40);
+
+const startY = y;
+const boxPadding = 6;
+const lineH = 6;
+const boxW = pageW - marginL - marginR;
+
+// Hoogte berekenen (titel + 4 lijnen + netto winst)
+const boxHSamenvatting = 10 + (4 * lineH) + 14;
+
+
+// Kader
+pdf.setFillColor(245, 245, 245);
+pdf.setDrawColor(180);
+pdf.roundedRect(marginL, startY, boxW, boxHSamenvatting, 4, 4, "FD");
+
+// Titel
+pdf.setFont(undefined, "bold");
+pdf.setFontSize(14);
+pdf.text("SAMENVATTING", marginL + boxPadding, startY + 8);
+
+// Inhoud
 pdf.setFontSize(11);
 pdf.setFont(undefined, "normal");
 
-// Totale omzet
-pdf.text("Totale omzet", 14, y);
-pdf.text(document.getElementById("resultaatOmzet").textContent, 190, y, { align: "right" });
-y += 7;
+let yy = startY + 16;
 
-// Totale inkoop (met verduidelijking)
-pdf.text("Totale inkoop (truffels en kerstrozen)", 14, y);
-pdf.text(document.getElementById("resultaatInkoop").textContent, 190, y, { align: "right" });
-y += 7;
+[
+  ["Totale omzet", document.getElementById("resultaatOmzet").textContent],
+  ["Totale inkoop", document.getElementById("resultaatInkoop").textContent],
+  ["Mollie-kosten", document.getElementById("resultaatMollie").textContent],
+  ["Transportkosten", document.getElementById("resultaatTransport").textContent],
+].forEach(([l, r]) => {
+  pdf.text(l, marginL + boxPadding, yy);
+  pdf.text(r, pageW - marginR - boxPadding, yy, { align: "right" });
+  yy += lineH;
+});
 
-// Mollie-kosten
-pdf.text("Mollie-kosten", 14, y);
-pdf.text(document.getElementById("resultaatMollie").textContent, 190, y, { align: "right" });
-y += 7;
+// Netto winst – extra opvallend
+yy += 4;
 
-// Transportkosten
-pdf.text("Transportkosten", 14, y);
-pdf.text(document.getElementById("resultaatTransport").textContent, 190, y, { align: "right" });
-y += 5;
+pdf.setFillColor(230, 245, 230);
+pdf.setDrawColor(120, 180, 120);
+pdf.roundedRect(
+  marginL + boxPadding,
+  yy,
+  boxW - boxPadding * 2,
+  12,
+  3,
+  3,
+  "FD"
+);
 
-// Lijn onder transportkosten
-pdf.setDrawColor(180);
-pdf.line(14, y, 190, y);
-y += 10;
-
-// Netto winst (opvallend)
-pdf.setFontSize(14);
 pdf.setFont(undefined, "bold");
-pdf.setTextColor(46, 125, 50); // groen
+pdf.setFontSize(13);
+pdf.setTextColor(20, 120, 20);
 
-pdf.text("Netto winst", 14, y);
-pdf.text(document.getElementById("resultaatWinst").textContent, 190, y, { align: "right" });
+pdf.text("NETTO WINST", marginL + boxPadding + 4, yy + 8);
+pdf.text(
+  document.getElementById("resultaatWinst").textContent,
+  pageW - marginR - boxPadding - 4,
+  yy + 8,
+  { align: "right" }
+);
 
-// Reset stijl
+// reset
 pdf.setTextColor(0, 0, 0);
-pdf.setFont(undefined, "normal");
+y = startY + boxHSamenvatting + 10;
 
-  pdf.save("winstoverzicht_schoolverkoop.pdf");
+  // opslaan
+  pdf.save(`winstoverzicht_${ACTIEVE_ACTIE}.pdf`);
 }
