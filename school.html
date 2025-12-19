@@ -18,40 +18,56 @@
     <!-- TOTAAL PER PRODUCT (LEVERANCIERS) -->
    <section class="card leveranciers-print">
   <h2>Totaal per product (leveranciers)</h2>
-<button id="downloadLeveranciersPdf" class="btn secondary" style="margin-bottom:12px;">
-  Download als PDF
+<div class="pdf-knoppen">
+  <button id="downloadPdfKerstrozen">
+    Download PDF – Kerstrozen
+  </button>
+
+  <button id="downloadPdfTruffels">
+    Download PDF – Truffels
+  </button>
+</div>
+
 </button>
 
      <div class="leveranciers-grid">
 
   <table class="overzicht-tabel">
-    <thead>
-      <tr>
-        <th colspan="3">Kerstrozen</th>
-      </tr>
-      <tr>
-        <th>Product</th>
-        <th>Variant</th>
-        <th>Aantal</th>
-      </tr>
-    </thead>
-    <tbody id="tabelKerstrozen"></tbody>
-  </table>
+  <thead>
+    <tr><th colspan="3">Kerstrozen</th></tr>
+    <tr>
+      <th>Product</th>
+      <th>Variant</th>
+      <th>Aantal</th>
+    </tr>
+  </thead>
+  <tbody id="tabelKerstrozen"></tbody>
+</table>
 
+<div>
   <table class="overzicht-tabel">
     <thead>
-      <tr>
-        <th colspan="3">Truffels</th>
-      </tr>
+      <tr><th colspan="3">Truffels 250 g</th></tr>
       <tr>
         <th>Product</th>
         <th>Variant</th>
         <th>Aantal</th>
       </tr>
     </thead>
-    <tbody id="tabelTruffels"></tbody>
+    <tbody id="tabelTruffels250"></tbody>
   </table>
 
+  <table class="overzicht-tabel" style="margin-top:12px;">
+    <thead>
+      <tr><th colspan="3">Truffels 500 g</th></tr>
+      <tr>
+        <th>Product</th>
+        <th>Variant</th>
+        <th>Aantal</th>
+      </tr>
+    </thead>
+    <tbody id="tabelTruffels500"></tbody>
+  </table>
 </div>
 
     </section>
