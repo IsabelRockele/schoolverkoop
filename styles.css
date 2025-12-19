@@ -205,11 +205,13 @@ select, input{
   grid-template-columns: 1fr 1fr;
   gap: 30px;
 }
-/* Scheidingslijn tussen Kerstrozen en Truffels */
-.leveranciers-grid table:last-child {
+
+/* Scheidingslijn tussen Kerstrozen en Truffels (rechterkolom) */
+.leveranciers-grid > div {
   border-left: 2px solid #e0e0e0;
-  padding-left: 20px;
+  padding-left: 24px;
 }
+
 /* =========================
    PRINT – leveranciersoverzicht
    ========================= */
@@ -744,3 +746,66 @@ select, input{
 button {
   touch-action: manipulation;
 }
+/* Meer ruimte tussen kolommen bij Truffels */
+.leveranciers-grid > div table.overzicht-tabel th,
+.leveranciers-grid > div table.overzicht-tabel td {
+  padding: 8px 14px;   /* ↑ meer horizontale lucht */
+}
+/* Kolombreedtes Truffels */
+.leveranciers-grid > div table.overzicht-tabel th:nth-child(1),
+.leveranciers-grid > div table.overzicht-tabel td:nth-child(1) {
+  width: 55%;
+}
+
+.leveranciers-grid > div table.overzicht-tabel th:nth-child(2),
+.leveranciers-grid > div table.overzicht-tabel td:nth-child(2) {
+  width: 25%;
+}
+
+.leveranciers-grid > div table.overzicht-tabel th:nth-child(3),
+.leveranciers-grid > div table.overzicht-tabel td:nth-child(3) {
+  width: 20%;
+  text-align: right;
+}
+/* Kader rond titel Truffels 250 g en 500 g */
+/* Kader rond titelrij van ALLE leveranciers (eenheid) */
+.leveranciers-grid table.overzicht-tabel thead tr:first-child th {
+  background-color: #f4f6f8;
+  border: 1px solid #e0e0e0;
+  font-weight: 700;
+  padding: 10px 0;
+}
+
+
+/* Zorg dat titel mooi los staat van kolomkoppen */
+.leveranciers-grid > div table.overzicht-tabel thead tr:nth-child(2) th {
+  padding-top: 12px;
+}
+/* PDF-knoppen – leveranciers */
+.pdf-knoppen {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 18px 0;
+  flex-wrap: wrap;
+}
+
+.pdf-knoppen button {
+  background-color: #e6f0ea;      /* lichtgroen */
+  border: 1px solid #b7d2c3;      /* zachte groene rand */
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pdf-knoppen button:hover {
+  background-color: #d8e9df;      /* iets donkerder bij hover */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.pdf-knoppen button:active {
+  background-color: #cfe3d6;
+}
+
