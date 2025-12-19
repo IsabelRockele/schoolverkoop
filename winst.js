@@ -461,12 +461,28 @@ y += boxHLeveranciers + 10;
 
   y += 4;
 
-  // Tabel: winst per product
-  newPageIfNeeded(12);
-  pdf.setFont(undefined, "bold");
-  pdf.setFontSize(11);
-  pdf.text("Winst per product", marginL, y);
-  y += 6;
+  // Tabel: winst per product — titel in kader
+newPageIfNeeded(18);
+
+const titleH = 12;
+pdf.setFillColor(245, 247, 250);
+pdf.setDrawColor(180);
+pdf.roundedRect(
+  marginL,
+  y - 6,
+  pageW - marginL - marginR,
+  titleH,
+  3,
+  3,
+  "FD"
+);
+
+pdf.setFont(undefined, "bold");
+pdf.setFontSize(14);
+pdf.text("Winst per product", marginL + 6, y + 2);
+
+y += titleH - 4;
+
 
   // Kolommen (a4 breedte: 210mm)
   pdf.setFontSize(9);
@@ -514,11 +530,14 @@ Object.keys(perLevPdf).forEach(levNaam => {
   if (!perLevPdf[levNaam].length) return;
 
   // Leverancierstitel
-  newPageIfNeeded(12);
-  pdf.setFont(undefined, "bold");
-  pdf.setFontSize(11);
-  pdf.text(levNaam, marginL, y);
-  y += 6;
+  // extra witruimte tussen leveranciers
+y += 6;
+
+pdf.setFont(undefined, "bold");
+pdf.setFontSize(11);
+pdf.text(levNaam, marginL, y);
+y += 10;
+
 
   headerRow();
   pdf.setFont(undefined, "normal");
@@ -556,7 +575,9 @@ Object.keys(perLevPdf).forEach(levNaam => {
 // ===============================
 newPageIfNeeded(40);
 
+y += 8;   // ← laat samenvatting iets zakken
 const startY = y;
+
 const boxPadding = 6;
 const lineH = 6;
 const boxW = pageW - marginL - marginR;
