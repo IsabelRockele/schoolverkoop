@@ -1,5 +1,5 @@
 :root{
-  --bg:#f3f6fb;
+  --bg:#f6f7f9;   /* warmer, minder blauw */
   --card:#ffffff;
   --text:#1b1f24;
   --muted:#6b7280;
@@ -8,13 +8,24 @@
   --radius:16px;
 }
 
-*{ box-sizing:border-box; }
+html,
 body{
   margin:0;
+  min-height:100%;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background:var(--bg);
+
+  background:
+  linear-gradient(
+    to bottom,
+    #f3f7f4 0%,   /* heel zacht groen bovenaan */
+    #e7efe9 100%  /* iets dieper groen onderaan */
+  );
+
+
   color:var(--text);
 }
+
+
 
 .top{
   text-align:center;
@@ -403,6 +414,9 @@ select, input{
   .layout {
     display: flex;
     flex-direction: column;
+    align-items: center;      /* 👈 centreert alles op gsm */
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .mandje-blok {
@@ -542,10 +556,14 @@ select, input{
   }
 
   .qty button {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-  }
+  width: 44px;          /* 👈 touch-vriendelijk */
+  height: 44px;
+  font-size: 18px;
+
+  border-radius: 12px;
+  line-height: 1;
+}
+
 
   .qty .val {
     font-size: 12px;
@@ -568,14 +586,16 @@ select, input{
   }
 
   /* Elke variant wordt een rij */
-  .variant-tegel {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 10px;
-    border-radius: 8px;
-    text-align: left;
-  }
+ .variant-tegel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 12px;   /* 👈 grotere klikzone */
+  border-radius: 10px;
+  text-align: left;
+}
+
 
   /* Afbeelding klein links */
   .variant-img {
@@ -604,15 +624,21 @@ select, input{
   }
 
   .qty button {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-  }
+  width: 44px;          /* 👈 touch-vriendelijk */
+  height: 44px;
+  font-size: 18px;
 
-  .qty .val {
-    font-size: 12px;
-    min-width: 14px;
-  }
+  border-radius: 12px;
+  line-height: 1;
+}
+
+
+ .qty .val {
+  font-size: 14px;
+  min-width: 24px;
+  text-align: center;
+}
+
 }
 .container {
   max-width: 420px;
@@ -707,4 +733,8 @@ select, input{
 .mandje-subtotaal {
   font-weight: 600;
   margin-top: 4px;
+}
+/* Touch-optimisatie */
+button {
+  touch-action: manipulation;
 }
