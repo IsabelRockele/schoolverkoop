@@ -102,6 +102,12 @@ h1{
   color:var(--muted);
 }
 
+.product-info {
+  font-size: 13px;
+  color: var(--muted);
+  margin: -4px 0 8px;
+}
+
 .product-row{
   display:flex;
   gap:12px;
