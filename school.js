@@ -31,7 +31,8 @@ const db = getFirestore(app);
 
 // 🔹 DOM
 const tabelKerstrozen = document.getElementById("tabelKerstrozen");
-const tabelTruffels = document.getElementById("tabelTruffels");
+const tabelTruffels250 = document.getElementById("tabelTruffels250");
+const tabelTruffels500 = document.getElementById("tabelTruffels500");
 const klasFilter = document.getElementById("klasFilter");
 const tabelKlas = document.querySelector("#totaalPerKlas tbody");
 const downloadPdfBtn = document.getElementById("downloadPdfKlas");
@@ -43,9 +44,9 @@ const downloadPdfPerKind = document.getElementById("downloadPdfPerKind");
 // A) TOTAAL PER PRODUCT (PER LEVERANCIER)
 // ============================
 async function laadTotaalPerProduct() {
-  tabelKerstrozen.innerHTML = "";
-tabelTruffels.innerHTML = "";
-
+tabelKerstrozen.innerHTML = "";
+tabelTruffels250.innerHTML = "";
+tabelTruffels500.innerHTML = "";
 
   const snapshot = await getDocs(
   query(
@@ -56,22 +57,33 @@ tabelTruffels.innerHTML = "";
 
 
   // leverancier-indeling (simpel en duidelijk)
-  const leveranciers = {
-    Kerstrozen: {},
-    Truffels: {}
-  };
+const leveranciers = {
+  Kerstrozen: {},
+  Truffels250: {},
+  Truffels500: {}
+};
+
 
   snapshot.forEach(doc => {
   const data = doc.data();
   const producten = haalProductenUitBestelling(data);
 
   producten.forEach(p => {
-    const leverancier =
-      p.naam === "Kerstrozen" ? "Kerstrozen" : "Truffels";
+    let leverancier = null;
 
-    const key = `${p.naam}|||${p.variant}`;
-    leveranciers[leverancier][key] =
-      (leveranciers[leverancier][key] || 0) + p.aantal;
+if (p.naam === "Kerstrozen") {
+  leverancier = "Kerstrozen";
+} else if (p.naam.includes("Truffels 250")) {
+  leverancier = "Truffels250";
+} else if (p.naam.includes("Truffels 500")) {
+  leverancier = "Truffels500";
+}
+if (!leverancier) return;
+
+const key = `${p.naam}|||${p.variant}`;
+leveranciers[leverancier][key] =
+  (leveranciers[leverancier][key] || 0) + p.aantal;
+
   });
 });
 
@@ -84,15 +96,6 @@ tabelTruffels.innerHTML = "";
     `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
 }
 
-if (
-  Object.keys(leveranciers.Truffels).length === 0
-) {
-  tabelTruffels.innerHTML =
-    `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
-}
-
-
-
   // Kerstrozen
   if (Object.keys(leveranciers.Kerstrozen).length > 0) {
   Object.keys(leveranciers.Kerstrozen).forEach(k => {
@@ -104,15 +107,23 @@ if (
 }
 
 
-  // Truffels
-  if (Object.keys(leveranciers.Truffels).length > 0) {
-  Object.keys(leveranciers.Truffels).forEach(k => {
-    const [naam, variant] = k.split("|||");
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels[k]}</td>`;
-    tabelTruffels.appendChild(tr);
-  });
-}
+  // Truffels 250 g
+Object.keys(leveranciers.Truffels250).forEach(k => {
+  const [naam, variant] = k.split("|||");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels250[k]}</td>`;
+  tabelTruffels250.appendChild(tr);
+});
+
+// Truffels 500 g
+Object.keys(leveranciers.Truffels500).forEach(k => {
+  const [naam, variant] = k.split("|||");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels500[k]}</td>`;
+  tabelTruffels500.appendChild(tr);
+});
+
+
 }
 
 
@@ -734,9 +745,22 @@ window.testPdfVoorEénKind = testPdfVoorEénKind;
 // ============================
 // EVENTS
 // ============================
-downloadLeveranciersPdf.addEventListener("click", () => {
-  window.print();
-});
+const btnPdfKerstrozen = document.getElementById("downloadPdfKerstrozen");
+const btnPdfTruffels = document.getElementById("downloadPdfTruffels");
+
+if (btnPdfKerstrozen) {
+  btnPdfKerstrozen.addEventListener("click", () => {
+    genereerPdfKerstrozen();
+  });
+}
+
+if (btnPdfTruffels) {
+  btnPdfTruffels.addEventListener("click", () => {
+    genereerPdfTruffels();
+  });
+}
+
+
 
 klasFilter.addEventListener("change", () => {
   laadTotaalPerKlas(klasFilter.value);
@@ -760,6 +784,135 @@ downloadPdfPerKind.addEventListener("click", () => {
 
   genereerPdfPerKind(klas);
 });
+// ============================
+// LEVERANCIERS-PDF (2 aparte bestanden)
+// - leverancier_truffels.pdf
+// - leverancier_kerstrozen.pdf
+// Met logo + schoolgegevens bovenaan en facturatiegegevens onderaan
+// ============================
+
+async function _loadImageAsDataURL(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Kon logo niet laden: " + url);
+  const blob = await res.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function _tekenKopEnVoet(pdf, titel) {
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  // Logo (geschaald) + schoolgegevens
+  const logoDataUrl = await _loadImageAsDataURL("afbeeldingen/schoollogo.png");
+
+  // Logo links (kleiner maken)
+  pdf.addImage(logoDataUrl, "PNG", 15, 10, 22, 22);
+
+  // Schooltekst naast logo
+  pdf.setFontSize(11);
+  pdf.setFont(undefined, "bold");
+  pdf.text("GO! Basisschool De Linde", 42, 18);
+
+  pdf.setFont(undefined, "normal");
+  pdf.text("Lindestraat 123a", 42, 24);
+  pdf.text("2880 Bornem", 42, 30);
+
+  // Titel
+  pdf.setFontSize(15);
+  pdf.setFont(undefined, "bold");
+  pdf.text(titel, pageW / 2, 45, { align: "center" });
+
+  // Voettekst (facturatie)
+  pdf.setFontSize(9);
+  pdf.setFont(undefined, "normal");
+  pdf.text(
+    "BTW-nummer: BE0850.037.427  •  e-mail: administratie@bsdelinde.net",
+    pageW / 2,
+    pageH - 12,
+    { align: "center" }
+  );
+
+  // y-start voor inhoud
+  return 55;
+}
+
+function _tekenKaderTitel(pdf, x, y, w, titel) {
+  pdf.setFillColor(245, 247, 249); // lichtgrijs
+  pdf.rect(x, y, w, 10, "F");
+  pdf.setDrawColor(200, 200, 200);
+  pdf.rect(x, y, w, 10);
+
+  pdf.setFontSize(12);
+  pdf.setFont(undefined, "bold");
+  pdf.text(titel, x + 4, y + 7);
+
+  return y + 14;
+}
+
+function _tekenTabelRijen(pdf, x, y, w, rows) {
+  pdf.setFontSize(11);
+  pdf.setFont(undefined, "normal");
+
+  rows.forEach(row => {
+    pdf.text(row.cells[0].innerText, x + 5, y);                 // product
+    pdf.text(row.cells[1].innerText, x + 90, y);                // variant
+    pdf.text(row.cells[2].innerText, x + w - 10, y, { align: "right" }); // aantal
+    y += 6.5;
+  });
+
+  return y;
+}
+
+async function genereerPdfTruffels() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let y = await _tekenKopEnVoet(pdf, "Overzicht leverancier – Truffels");
+
+  const x = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+  const w = pageW - x * 2;
+
+  // Truffels 250 g
+  y = _tekenKaderTitel(pdf, x, y, w, "Truffels 250 g");
+  y = _tekenTabelRijen(pdf, x, y, w, [...tabelTruffels250.rows]);
+  y += 10;
+
+  // Truffels 500 g
+  y = _tekenKaderTitel(pdf, x, y, w, "Truffels 500 g");
+  y = _tekenTabelRijen(pdf, x, y, w, [...tabelTruffels500.rows]);
+
+  pdf.save("leverancier_truffels.pdf");
+}
+
+async function genereerPdfKerstrozen() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let y = await _tekenKopEnVoet(pdf, "Overzicht leverancier – Kerstrozen");
+
+  const x = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+  const w = pageW - x * 2;
+
+  y = _tekenKaderTitel(pdf, x, y, w, "Kerstrozen");
+  y = _tekenTabelRijen(pdf, x, y, w, [...tabelKerstrozen.rows]);
+
+  pdf.save("leverancier_kerstrozen.pdf");
+}
+
+// Deze functie blijft de "entry point" voor je bestaande knop
+async function genereerLeveranciersPdf() {
+  // Eerst truffels, daarna kerstrozen (2 aparte downloads)
+  await genereerPdfTruffels();
+  await genereerPdfKerstrozen();
+}
+
 
 // ============================
 // INIT
