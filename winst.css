@@ -10,11 +10,44 @@ body {
   background: #fff;
   padding: 12px 24px;
   border-bottom: 1px solid #ddd;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.header-row{
+  display: grid;
+  grid-template-columns: 220px 1fr 140px;
+  gap: 12px;
+  align-items: center;
+}
+
+.header-titles h1{
+  margin: 0;
+  font-size: 20px;
 }
 
 .subtitel {
+  margin: 4px 0 0 0;
   font-size: 13px;
   color: #666;
+}
+
+.header-btn{
+  margin: 0;
+}
+
+/* TERUG KNOP (simple) */
+.terug-btn{
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.terug-btn:hover{
+  background: #f2f2f2;
 }
 
 /* SAMENVATTING */
@@ -37,74 +70,65 @@ body {
   font-weight: bold;
 }
 
-/* INSTELLINGEN + INKOOP */
+/* LAYOUT: links instellingen + resultaat / rechts tabel */
 .winst-instellingen {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 20px;
-  padding: 12px 24px;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  padding: 0 24px 16px 24px;
+  align-items: start;
 }
 
 .instelling-blok {
   background: #eef3f8;
   padding: 10px;
   border-radius: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #d9e2ee;
+}
+
+.instelling-blok label{
+  font-size: 13px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.instelling-blok input{
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #bfc9d6;
+  font-size: 14px;
 }
 
 .hint {
   font-size: 12px;
   color: #555;
+  margin: 6px 0 0 0;
 }
 
-.inkoop-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-/* TABELLEN */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border: 1px solid #ddd;
-}
-
-th, td {
-  padding: 6px 8px;
-  font-size: 13px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* TOTAAL PER PRODUCT */
-.inkoop-totaal {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background-color: #f1f3f5;
-  border-radius: 6px;
-  font-size: 14px;
-  display: flex;
-  justify-content: space-between;
-}
-
+/* RESULTAAT (links) */
 .winst-resultaat {
-  margin: 12px 24px;
-  padding: 14px 18px;
+  margin-top: 10px;
+  padding: 12px 14px;
   background-color: #ffffff;
   border: 2px solid #cce5cc;
-  border-radius: 8px;
-
-  max-width: 400px;   /* 👈 DIT is de sleutel */
+  border-radius: 10px;
 }
 
+.winst-resultaat h2{
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
 
 .resultaat-regel {
   display: grid;
   grid-template-columns: 1fr 120px;
   align-items: center;
   gap: 12px;
-  padding: 2px 0;
+  padding: 3px 0;
+  font-size: 13px;
 }
 
 .resultaat-regel span:last-child {
@@ -130,19 +154,115 @@ th, td {
   font-variant-numeric: tabular-nums;
 }
 
+.mini-hint{
+  margin-top: 8px;
+  font-size: 12px;
+  color: #444;
+}
+
+/* RECHTS: tabel met interne scroll */
+.inkoopprijzen h2{
+  margin: 0 0 10px 0;
+}
+
+.table-scroll{
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: auto;
+  max-height: calc(100vh - 260px); /* groot effect: pagina blijft kort */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th, td {
+  padding: 7px 8px;
+  font-size: 13px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+thead th{
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  z-index: 1;
+}
+
+td.num, th.num{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.inkoop-input{
+  width: 90px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #cfcfcf;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.totaal-rijen{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.inkoop-totaal {
+  padding: 8px 12px;
+  background-color: #f1f3f5;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid #e1e3e6;
+}
 
 /* KNOP */
 .compact-btn {
-  margin-top: 10px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-size: 14px;
   background: #0066cc;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .compact-btn:hover {
   background: #004f9e;
+}
+/* ===== Groepering per leverancier ===== */
+
+.leverancier-header {
+  background: #eef3f8;
+  font-weight: bold;
+  font-size: 14px;
+  border-top: 2px solid #cbd5e1;
+}
+
+.leverancier-header td {
+  padding: 10px 8px;
+}
+
+.subtotaal-rij {
+  background: #f8fafc;
+  font-weight: bold;
+  border-top: 1px solid #d1d5db;
+}
+
+.subtotaal-rij td {
+  padding: 8px;
+}
+
+.subtotaal-rij .label {
+  text-align: right;
+  color: #374151;
 }
