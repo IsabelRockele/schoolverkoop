@@ -26,35 +26,35 @@ console.log("app.js gestart");
 // 🔹 TIJDELIJKE PRODUCTEN (GEEN FIREBASE)
 const productenData = [
   {
-    id: "truffel500",
-    naam: "Truffel 500 g",
-    prijs: 6,
-    varianten: [
-  { code: "wit", img: "afbeeldingen/wit.png" },
-  { code: "melk", img: "afbeeldingen/melk.png" },
-  { code: "donker", img: "afbeeldingen/donker.png" }
-]
-  },
-  {
     id: "truffel250",
     naam: "Truffels 250 g",
-    prijs: 4,
+    prijs: 6,              // ✅ juiste verkoopprijs
     varianten: [
-  { code: "wit", img: "afbeeldingen/wit.png" },
-  { code: "melk", img: "afbeeldingen/melk.png" },
-  { code: "donker", img: "afbeeldingen/donker.png" }
-]
+      { code: "wit", img: "afbeeldingen/wit.png" },
+      { code: "melk", img: "afbeeldingen/melk.png" },
+      { code: "donker", img: "afbeeldingen/donker.png" }
+    ]
+  },
+  {
+    id: "truffel500",
+    naam: "Truffels 500 g",
+    prijs: 12,             // ✅ juiste verkoopprijs
+    varianten: [
+      { code: "wit", img: "afbeeldingen/wit.png" },
+      { code: "melk", img: "afbeeldingen/melk.png" },
+      { code: "donker", img: "afbeeldingen/donker.png" }
+    ]
   },
   {
     id: "kerstrozen",
     naam: "Kerstrozen",
-    prijs: 6,
+    prijs: 4,              // ✅ juiste verkoopprijs
+    info: "Pot ⌀ 10,5 cm (min. 5 bloemen)",
     varianten: [
-  { code: "wit", img: "afbeeldingen/kerstroos_wit.png" },
-  { code: "rood", img: "afbeeldingen/kerstroos_rood.png" },
-  { code: "roze", img: "afbeeldingen/kerstroos_roze.png" }
-]
-
+      { code: "wit", img: "afbeeldingen/kerstroos_wit.png" },
+      { code: "rood", img: "afbeeldingen/kerstroos_rood.png" },
+      { code: "roze", img: "afbeeldingen/kerstroos_roze.png" }
+    ]
   }
 ];
 
@@ -87,10 +87,12 @@ productenData.forEach(product => {
   card.className = "product-card";
 
   card.innerHTML = `
-    <h3 class="product-title">${product.naam}</h3>
-    <p><strong>Prijs:</strong> € ${product.prijs}</p>
-    <div class="varianten"></div>
-  `;
+  <h3 class="product-title">${product.naam}</h3>
+  <p><strong>Prijs:</strong> € ${product.prijs}</p>
+  ${product.info ? `<p class="product-info">${product.info}</p>` : ""}
+  <div class="varianten"></div>
+`;
+
 
   const variantenContainer = card.querySelector(".varianten");
 
