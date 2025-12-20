@@ -86,13 +86,27 @@ productenData.forEach(product => {
   const card = document.createElement("div");
   card.className = "product-card";
 
-  card.innerHTML = `
-  <h3 class="product-title">${product.naam}</h3>
-  <p><strong>Prijs:</strong> € ${product.prijs}</p>
+card.innerHTML = `
+  ${product.id.startsWith("truffel") ? `
+    <div class="product-header">
+      <div class="product-header-tekst">
+        <h3 class="product-title">${product.naam}</h3>
+        <p><strong>Prijs:</strong> € ${product.prijs}</p>
+      </div>
+      <img
+        src="afbeeldingen/doos_truffels.png"
+        alt="Truffels – verpakking"
+        class="product-doos"
+      />
+    </div>
+  ` : `
+    <h3 class="product-title">${product.naam}</h3>
+    <p><strong>Prijs:</strong> € ${product.prijs}</p>
+  `}
+
   ${product.info ? `<p class="product-info">${product.info}</p>` : ""}
   <div class="varianten"></div>
 `;
-
 
   const variantenContainer = card.querySelector(".varianten");
 
