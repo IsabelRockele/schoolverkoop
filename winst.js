@@ -37,6 +37,33 @@ let totaleOmzet = 0;
 let productenLijst = []; // {key, leverancier, productLabel, verkoopprijs, aantal, omzet}
 let inkoopMap = {};      // key -> inkoop/stuk (number)
 
+// ===============================
+// VASTE PRODUCTLIJST (altijd zichtbaar, ook zonder verkoop)
+// ===============================
+const PRODUCTEN_VAST = [
+  // Kerstrozen
+  { leverancier: "Kerstrozen", key: "kerstrozen_wit", label: "Kerstrozen – wit", verkoopprijs: 4.00 },
+  { leverancier: "Kerstrozen", key: "kerstrozen_rood", label: "Kerstrozen – rood", verkoopprijs: 4.00 },
+  { leverancier: "Kerstrozen", key: "kerstrozen_roze", label: "Kerstrozen – roze", verkoopprijs: 4.00 },
+
+  // Truffels 250 g
+  { leverancier: "Truffels", key: "truffels_250_donker", label: "Truffels 250 g – donker", verkoopprijs: 6.00 },
+  { leverancier: "Truffels", key: "truffels_250_melk",   label: "Truffels 250 g – melk",   verkoopprijs: 6.00 },
+  { leverancier: "Truffels", key: "truffels_250_wit",    label: "Truffels 250 g – wit",    verkoopprijs: 6.00 },
+
+  // Truffels 500 g
+  { leverancier: "Truffels", key: "truffels_500_donker", label: "Truffels 500 g – donker", verkoopprijs: 12.00 },
+  { leverancier: "Truffels", key: "truffels_500_melk",   label: "Truffels 500 g – melk",   verkoopprijs: 12.00 },
+  { leverancier: "Truffels", key: "truffels_500_wit",    label: "Truffels 500 g – wit",    verkoopprijs: 12.00 }
+];
+// ===============================
+// Lookup: productLabel → vaste key
+// ===============================
+const PRODUCT_KEY_LOOKUP = {};
+PRODUCTEN_VAST.forEach(p => {
+  PRODUCT_KEY_LOOKUP[p.label.toLowerCase()] = p.key;
+});
+
 // Samengevat winstoverzicht per leverancier (voor PDF & UI)
 let winstOverzicht = {
   truffels: { omzet: 0, inkoop: 0, winst: 0 },
@@ -122,6 +149,18 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===============================
 async function laadBasisGegevens() {
   try {
+        // ===============================
+    // 1. Start met vaste productlijst
+    // ===============================
+    productenLijst = PRODUCTEN_VAST.map(p => ({
+      key: p.key,
+      leverancier: p.leverancier,
+      productLabel: p.label,
+      verkoopprijs: p.verkoopprijs,
+      aantal: 0,
+      omzet: 0
+    }));
+
     const snapshot = await getDocs(
       query(
         collection(db, "bestellingen_test"),
@@ -133,8 +172,18 @@ async function laadBasisGegevens() {
     totaleOmzet = 0;
     aantalBestellingen = 0;
 
-    // map per productKey
-    const map = {}; // key -> {leverancier, productLabel, verkoopprijs, aantal}
+    // map per productKey (start van vaste producten)
+const map = {};
+productenLijst.forEach(p => {
+  map[p.key] = {
+    key: p.key,
+    leverancier: p.leverancier,
+    productLabel: p.productLabel,
+    verkoopprijs: p.verkoopprijs,
+    aantal: 0
+  };
+});
+
 
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -149,16 +198,19 @@ async function laadBasisGegevens() {
         const aantal = Number(item.aantal || 0);
 
         const leverancier = leverancierVanItem(naam.toLowerCase());
-        const productLabel = variant ? `${naam} – ${variant}` : naam;
-        const key = productLabel.toLowerCase(); // stabiele sleutel
+       const productLabel = variant ? `${naam} – ${variant}` : naam;
 
-        if (!map[key]) {
-          map[key] = { key, leverancier, productLabel, verkoopprijs: prijs, aantal: 0 };
-        }
-        map[key].aantal += aantal;
+// 🔑 vaste key opzoeken via PRODUCTEN_VAST
+const vasteKey = PRODUCT_KEY_LOOKUP[productLabel.toLowerCase()];
+if (!vasteKey) return; // onbekend product → negeren
 
-        // als verkoopprijs ooit 0 was, maar later wel gevuld: pak de laatste niet-0
-        if (prijs > 0) map[key].verkoopprijs = prijs;
+// ❗ alleen optellen, nooit nieuw product maken
+map[vasteKey].aantal += aantal;
+
+// verkoopprijs eventueel bijwerken
+if (prijs > 0) {
+  map[vasteKey].verkoopprijs = prijs;
+}
       });
     });
 
