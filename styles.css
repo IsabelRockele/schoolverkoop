@@ -518,6 +518,41 @@ select, input{
     font-size: 14px;
   }
 }
+
+/* HEADER – mobiel: logo links, tekst rechts (onder elkaar) */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 12px 8px; /* compacter */
+  text-align: left;
+}
+
+.top .logo {
+  width: 48px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* tekstblok rechts van logo */
+.top h1,
+.top .subtitle {
+  display: block;
+}
+
+.top h1 {
+  font-size: 20px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.top .subtitle {
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+
 /* ===============================
    MOBIEL – ZEER DUIDELIJK ANDERS
    =============================== */
@@ -581,6 +616,40 @@ select, input{
     font-size: 16px;
   }
 }
+
+/* HEADER – mobiel: logo links, tekst rechts (onder elkaar) */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 12px 8px; /* compacter */
+  text-align: left;
+}
+
+.top .logo {
+  width: 48px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* tekstblok rechts van logo */
+.top h1,
+.top .subtitle {
+  display: block;
+}
+
+.top h1 {
+  font-size: 20px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.top .subtitle {
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
 /* ===============================
    MOBIEL – PRODUCTEN ALS LIJST
    =============================== */
@@ -809,3 +878,27 @@ button {
   background-color: #cfe3d6;
 }
 
+.product-hoofd-afbeelding {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.product-hoofd-afbeelding img {
+  max-width: 140px;
+  height: auto;
+}
+.product-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.product-header-tekst {
+  flex: 1;
+}
+
+.product-doos {
+  width: 90px;
+  height: auto;
+}
