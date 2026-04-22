@@ -13,110 +13,161 @@
     <p class="subtitle">Interne schoolpagina</p>
   </header>
 
-  <main class="layout">
+  <main class="layout layout-tabs">
 
-    <!-- TOTAAL PER PRODUCT (LEVERANCIERS) -->
-   <section class="card leveranciers-print">
-  <h2>Totaal per product (leveranciers)</h2>
-<div class="pdf-knoppen">
-  <button id="downloadPdfKerstrozen">
-    Download PDF – Kerstrozen
-  </button>
-
-  <button id="downloadPdfTruffels">
-    Download PDF – Truffels
-  </button>
-</div>
-
-</button>
-
-     <div class="leveranciers-grid">
-
-  <table class="overzicht-tabel">
-  <thead>
-    <tr><th colspan="3">Kerstrozen</th></tr>
-    <tr>
-      <th>Product</th>
-      <th>Variant</th>
-      <th>Aantal</th>
-    </tr>
-  </thead>
-  <tbody id="tabelKerstrozen"></tbody>
-</table>
-
-<div>
-  <table class="overzicht-tabel">
-    <thead>
-      <tr><th colspan="3">Truffels 250 g</th></tr>
-      <tr>
-        <th>Product</th>
-        <th>Variant</th>
-        <th>Aantal</th>
-      </tr>
-    </thead>
-    <tbody id="tabelTruffels250"></tbody>
-  </table>
-
-  <table class="overzicht-tabel" style="margin-top:12px;">
-    <thead>
-      <tr><th colspan="3">Truffels 500 g</th></tr>
-      <tr>
-        <th>Product</th>
-        <th>Variant</th>
-        <th>Aantal</th>
-      </tr>
-    </thead>
-    <tbody id="tabelTruffels500"></tbody>
-  </table>
-</div>
-
-    </section>
-
-    <!-- TOTAAL PER KLAS + PDF -->
-    <section class="card">
-      <h2>Totaal per klas</h2>
-      
-
-      <label for="klasFilter">Kies klas:</label>
-      <select id="klasFilter">
-        <option value="">— kies klas —</option>
-        <option>K1</option>
-        <option>K2</option>
-        <option>K3</option>
-        <option>1A</option>
-        <option>2A</option>
-        <option>3A</option>
-        <option>4A</option>
-        <option>5A</option>
-        <option>6A</option>
-        <option>Personeel De Linde</option>
-<option>Atheneum Klein-Brabant</option>
-      </select>
-
-      <button id="downloadPdfKlas" class="btn secondary" style="margin-top:10px;">
-        Download PDF per klas
+    <!-- KNOPPENBALK -->
+    <div class="knoppenbalk" role="tablist">
+      <button class="tab-knop" role="tab" data-tab="kerstrozen" aria-selected="false">
+        <span class="tab-knop-label">Kerstrozen</span>
+        <span class="tab-knop-meta" id="tabMetaKerstrozen"></span>
       </button>
-      <button id="downloadPdfPerKind" class="btn secondary" style="margin-top:10px;">
-  Download besteloverzichten per kind (PDF)
-</button>
+      <button class="tab-knop" role="tab" data-tab="truffels" aria-selected="false">
+        <span class="tab-knop-label">Truffels</span>
+        <span class="tab-knop-meta" id="tabMetaTruffels"></span>
+      </button>
+      <button class="tab-knop" role="tab" data-tab="klas" aria-selected="false">
+        <span class="tab-knop-label">Totaal per klas</span>
+      </button>
 
-<button id="openWinstBerekening" class="btn" style="margin-top:20px;">
-  📊 Bekijk winstberekening
-</button>
+      <button id="openWinstBerekening" class="winst-knop">
+        📊 Winstberekening
+      </button>
+    </div>
 
-      <table id="totaalPerKlas" class="overzicht-tabel" style="margin-top:12px;">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Variant</th>
-            <th>Aantal</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- gevuld via school.js -->
-        </tbody>
-      </table>
-    </section>
+    <!-- INHOUDSKADER -->
+    <div class="tab-inhoud">
+
+      <!-- Starthint -->
+      <div id="tabHint" class="tab-hint">
+        <p>Kies bovenaan wat je wil bekijken.</p>
+      </div>
+
+      <!-- TAB: KERSTROZEN -->
+      <section class="tab-panel" data-panel="kerstrozen" hidden>
+        <div class="tab-panel-header">
+          <h2>Kerstrozen</h2>
+          <button id="downloadPdfKerstrozen" class="btn-pdf">
+            Download PDF – Kerstrozen
+          </button>
+        </div>
+
+        <table class="overzicht-tabel">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th class="num">Aantal</th>
+              <th class="num">Prijs/stuk</th>
+              <th class="num">Totaal</th>
+            </tr>
+          </thead>
+          <tbody id="tabelKerstrozen"></tbody>
+        </table>
+
+        <div id="kerstrozenFactuurTotaal" class="leverancier-factuur verborgen">
+          <span>Te betalen aan leverancier kerstrozen</span>
+          <strong id="kerstrozenFactuurBedrag">€ 0,00</strong>
+        </div>
+      </section>
+
+      <!-- TAB: TRUFFELS -->
+      <section class="tab-panel" data-panel="truffels" hidden>
+        <div class="tab-panel-header">
+          <h2>Truffels</h2>
+          <button id="downloadPdfTruffels" class="btn-pdf">
+            Download PDF – Truffels
+          </button>
+        </div>
+
+        <h3 class="subtabel-titel">
+          Truffels 250 g <span class="dozen-hint">(12 dozen per grote doos)</span>
+        </h3>
+        <table class="overzicht-tabel overzicht-tabel-truffels">
+          <thead>
+            <tr>
+              <th>Smaak</th>
+              <th class="num">Verkocht</th>
+              <th class="num">Grote dozen</th>
+              <th class="num">Bestellen</th>
+              <th class="num">Overschot</th>
+              <th class="num">Prijs/stuk</th>
+              <th class="num">Totaal</th>
+            </tr>
+          </thead>
+          <tbody id="tabelTruffels250"></tbody>
+        </table>
+
+        <h3 class="subtabel-titel" style="margin-top:18px;">
+          Truffels 500 g <span class="dozen-hint">(8 dozen per grote doos)</span>
+        </h3>
+        <table class="overzicht-tabel overzicht-tabel-truffels">
+          <thead>
+            <tr>
+              <th>Smaak</th>
+              <th class="num">Verkocht</th>
+              <th class="num">Grote dozen</th>
+              <th class="num">Bestellen</th>
+              <th class="num">Overschot</th>
+              <th class="num">Prijs/stuk</th>
+              <th class="num">Totaal</th>
+            </tr>
+          </thead>
+          <tbody id="tabelTruffels500"></tbody>
+        </table>
+
+        <div id="truffelsFactuurTotaal" class="leverancier-factuur verborgen">
+          <span>Te betalen aan leverancier truffels (250 g + 500 g)</span>
+          <strong id="truffelsFactuurBedrag">€ 0,00</strong>
+        </div>
+      </section>
+
+      <!-- TAB: TOTAAL PER KLAS -->
+      <section class="tab-panel" data-panel="klas" hidden>
+        <div class="tab-panel-header">
+          <h2>Totaal per klas</h2>
+        </div>
+
+        <div class="klas-filter-rij">
+          <label for="klasFilter">Kies klas:</label>
+          <select id="klasFilter">
+            <option value="">— kies klas —</option>
+            <option>K1</option>
+            <option>K2</option>
+            <option>K3</option>
+            <option>1A</option>
+            <option>2A</option>
+            <option>3A</option>
+            <option>4A</option>
+            <option>5A</option>
+            <option>6A</option>
+            <option>Personeel De Linde</option>
+            <option>Atheneum Klein-Brabant</option>
+          </select>
+        </div>
+
+        <div class="klas-knoppen">
+          <button id="downloadPdfKlas" class="btn secondary">
+            Download PDF per klas
+          </button>
+          <button id="downloadPdfPerKind" class="btn secondary">
+            Download besteloverzichten per kind (PDF)
+          </button>
+        </div>
+
+        <table id="totaalPerKlas" class="overzicht-tabel" style="margin-top:12px;">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Variant</th>
+              <th class="num">Aantal</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
 
   </main>
 
