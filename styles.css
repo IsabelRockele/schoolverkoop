@@ -850,6 +850,96 @@ button {
 .leveranciers-grid > div table.overzicht-tabel thead tr:nth-child(2) th {
   padding-top: 12px;
 }
+
+/* ===============================
+   TRUFFEL-TABEL (7 kolommen: smaak/verkocht/grote/bestellen/overschot/prijs/totaal)
+   Overrule de generieke 3-kolom-breedtes voor deze tabellen.
+   =============================== */
+.overzicht-tabel-truffels .dozen-hint {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: #666;
+  margin-left: 6px;
+}
+
+/* Iets kleinere padding zodat 7 kolommen comfortabel passen */
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels th,
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels td {
+  padding: 7px 8px;
+  font-size: 0.92em;
+}
+
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels th:nth-child(1),
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels td:nth-child(1) {
+  width: 14%;
+  text-align: left;
+}
+
+/* Alle cijferkolommen: gelijke breedte, rechts uitgelijnd */
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels th:nth-child(n+2),
+.leveranciers-grid > div table.overzicht-tabel.overzicht-tabel-truffels td:nth-child(n+2) {
+  width: auto;
+  text-align: right;
+}
+
+/* num-cellen (rechts uitlijnen van cijfers) */
+.overzicht-tabel td.num,
+.overzicht-tabel th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Totaalrij – duidelijk afsluiten onder elke leveranciertabel */
+.overzicht-tabel tr.totaalrij td {
+  background-color: #f4f6f8;
+  border-top: 2px solid #cbd5e1;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Overschot in warme kleur als het groter is dan 0 */
+.overzicht-tabel td.overschot-pos {
+  color: #b45309; /* amber/oranje-achtig: "opletten" maar geen error */
+  font-weight: 600;
+}
+
+/* Placeholder voor ontbrekende inkoopprijs */
+.overzicht-tabel .prijs-ontbreekt {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Groene factuurbalk "Te betalen aan leverancier" */
+.leverancier-factuur {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #e6f0ea;
+  border-top: 3px solid #2d7d4e;
+  border-radius: 0 0 8px 8px;
+  color: #1a5c3a;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.leverancier-factuur strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.leverancier-factuur.verborgen {
+  display: none;
+}
+
+.leverancier-factuur .prijs-hint {
+  flex-basis: 100%;
+  margin-top: 6px;
+  font-weight: 400;
+  font-size: 0.82rem;
+  color: #64748b;
+}
 /* PDF-knoppen – leveranciers */
 .pdf-knoppen {
   display: flex;
@@ -951,5 +1041,269 @@ button {
     font-size: 14px;
     color: var(--muted);  /* rustiger */
     margin-top: 4px;
+  }
+}
+
+/* ===============================
+   OVERZICHT-SCHERM (voorstel C: knoppenbalk)
+   Overrulet de oude 2-koloms .layout grid.
+   =============================== */
+.layout.layout-tabs {
+  display: block;
+  max-width: 1100px;
+  margin: 26px auto 40px;
+  padding: 0 16px;
+}
+
+.knoppenbalk {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.tab-knop {
+  background: white;
+  border: 1px solid #d4ddd4;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-knop:hover {
+  background: #f4f6f8;
+  border-color: #b7c9b9;
+}
+
+.tab-knop[aria-selected="true"] {
+  background: #1a5c3a;
+  border-color: #1a5c3a;
+  color: white;
+}
+
+.tab-knop[aria-selected="true"] .tab-knop-meta {
+  color: #c8e5d4;
+}
+
+.tab-knop-label {
+  font-weight: 600;
+}
+
+.tab-knop-meta {
+  font-weight: 400;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.tab-knop-meta:not(:empty)::before {
+  content: "·";
+  margin-right: 4px;
+  color: #9ca3af;
+}
+
+.tab-knop[aria-selected="true"] .tab-knop-meta:not(:empty)::before {
+  color: #c8e5d4;
+}
+
+.winst-knop {
+  margin-left: auto;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.winst-knop:hover {
+  background: #1d4ed8;
+}
+
+.tab-inhoud {
+  background: white;
+  border: 1px solid #d4ddd4;
+  border-radius: 10px;
+  padding: 1.5rem;
+  min-height: 180px;
+}
+
+.tab-hint {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.tab-hint p {
+  margin: 0;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.tab-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.tab-panel-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.btn-pdf {
+  background: #e6f0ea;
+  border: 1px solid #b7d2c3;
+  border-radius: 8px;
+  padding: 7px 13px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-pdf:hover {
+  background: #d8e9df;
+}
+
+.subtabel-titel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+  padding: 9px 12px;
+  background: #f4f6f8;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #e0e0e0;
+  border-bottom: none;
+}
+
+.subtabel-titel .dozen-hint {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: #6b7280;
+  margin-left: 6px;
+}
+
+.klas-filter-rij {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.klas-filter-rij label {
+  font-size: 14px;
+  color: #374151;
+  margin: 0;
+}
+
+.klas-filter-rij select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #cfcfcf;
+  font-size: 14px;
+  min-width: 200px;
+}
+
+.klas-knoppen {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Tabellen binnen tab-panels */
+.tab-panel table.overzicht-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tab-panel table.overzicht-tabel th {
+  background: #f9fafb;
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-panel table.overzicht-tabel th.num {
+  text-align: right;
+}
+
+.tab-panel table.overzicht-tabel td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.tab-panel table.overzicht-tabel td.num,
+.overzicht-tabel td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kerstrozen-tabel: redelijke kolomverhoudingen
+   (Product/Variant breed, cijferkolommen smaller) */
+.tab-panel table.overzicht-tabel th:nth-child(1),
+.tab-panel table.overzicht-tabel td:nth-child(1) { width: 22%; }
+.tab-panel table.overzicht-tabel th:nth-child(2),
+.tab-panel table.overzicht-tabel td:nth-child(2) { width: 18%; }
+
+/* Truffel-tabel herdefinieert zelf zijn kolommen en overschrijft bovenstaande */
+
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels {
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels th,
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels td {
+  padding: 9px 12px;
+  font-size: 0.92em;
+}
+
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels th:first-child,
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels td:first-child {
+  text-align: left;
+  width: 14%;
+}
+
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels th:not(:first-child),
+.tab-panel table.overzicht-tabel.overzicht-tabel-truffels td:not(:first-child) {
+  text-align: right;
+}
+
+/* Op smalle schermen: knoppen stapelen, winstknop naar volle breedte */
+@media (max-width: 720px) {
+  .winst-knop {
+    margin-left: 0;
+    width: 100%;
+    margin-top: 6px;
+  }
+  .tab-knop {
+    flex: 1;
   }
 }
