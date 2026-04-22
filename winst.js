@@ -27,6 +27,28 @@ const db = getFirestore(app);
 // 🔹 Actieve verkoopactie
 const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
+// 🔹 Verpakkingseenheden
+// Truffels worden per grote doos geleverd. Het bedrijf rondt naar boven af,
+// dus de inkoopkost geldt over het volledige geleverde aantal (incl. overschot).
+const DOZEN_PER_GROTE_DOOS = {
+  truffels_250: 12,
+  truffels_500: 8
+};
+
+// Welke key uit DOZEN_PER_GROTE_DOOS gebruiken we voor een gegeven product?
+function verpakkingKeyVoor(productKey) {
+  if (productKey.startsWith("truffels_250")) return "truffels_250";
+  if (productKey.startsWith("truffels_500")) return "truffels_500";
+  return null; // bv. kerstrozen → geen verpakkingseenheid
+}
+
+function berekenDozenInfo(verkocht, perGroteDoos) {
+  const grote = verkocht > 0 ? Math.ceil(verkocht / perGroteDoos) : 0;
+  const bestellen = grote * perGroteDoos;
+  const overschot = bestellen - verkocht;
+  return { grote, bestellen, overschot };
+}
+
 // localStorage keys
 const LS_SETTINGS = `winst_${ACTIEVE_ACTIE}_settings`;
 const LS_INKOOP = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
@@ -78,6 +100,14 @@ function euro(n) {
   return "€ " + v.toFixed(2).replace(".", ",");
 }
 
+// Getal parsen dat zowel "2,50" als "2.50" accepteert (BE + internationaal)
+function parseGetal(str) {
+  if (str === null || str === undefined || str === "") return 0;
+  const s = String(str).replace(",", ".").trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
 function leverancierVanItem(naamLower) {
   if (naamLower.includes("truffel")) return "Truffels";
   if (naamLower.includes("kerstroos") || naamLower.includes("kerstrozen")) return "Kerstrozen";
@@ -87,8 +117,15 @@ function leverancierVanItem(naamLower) {
 function loadLocal() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}");
-    if (typeof s.mollieKost !== "undefined") document.getElementById("mollieKost").value = s.mollieKost;
-    if (typeof s.transportKost !== "undefined") document.getElementById("transportKost").value = s.transportKost;
+    if (typeof s.mollieKost !== "undefined") {
+      // Toon opgeslagen waarde in Belgische komma-notatie
+      document.getElementById("mollieKost").value =
+        Number(s.mollieKost).toFixed(2).replace(".", ",");
+    }
+    if (typeof s.transportKost !== "undefined") {
+      document.getElementById("transportKost").value =
+        Number(s.transportKost).toFixed(2).replace(".", ",");
+    }
   } catch {}
 
   try {
@@ -99,8 +136,9 @@ function loadLocal() {
 }
 
 function saveLocalSettings() {
-  const mollieKost = Number(document.getElementById("mollieKost").value || 0);
-  const transportKost = Number(document.getElementById("transportKost").value || 0);
+  // Komma wordt geaccepteerd dankzij parseGetal
+  const mollieKost = parseGetal(document.getElementById("mollieKost").value);
+  const transportKost = parseGetal(document.getElementById("transportKost").value);
   localStorage.setItem(LS_SETTINGS, JSON.stringify({ mollieKost, transportKost }));
 }
 
@@ -131,13 +169,26 @@ document.addEventListener("DOMContentLoaded", () => {
   loadLocal();
 
   // live herberekenen bij wijziging van kosten
-  document.getElementById("mollieKost").addEventListener("input", () => {
+  const mollieEl = document.getElementById("mollieKost");
+  const transportEl = document.getElementById("transportKost");
+
+  mollieEl.addEventListener("input", () => {
     saveLocalSettings();
     herberekenAlles();
   });
-  document.getElementById("transportKost").addEventListener("input", () => {
+  transportEl.addEventListener("input", () => {
     saveLocalSettings();
     herberekenAlles();
+  });
+
+  // Bij verlaten van het veld: mooi formatteren (bv. "2,5" → "2,50")
+  mollieEl.addEventListener("blur", () => {
+    const n = parseGetal(mollieEl.value);
+    mollieEl.value = n.toFixed(2).replace(".", ",");
+  });
+  transportEl.addEventListener("blur", () => {
+    const n = parseGetal(transportEl.value);
+    transportEl.value = n.toFixed(2).replace(".", ",");
   });
 
   // data laden
@@ -215,10 +266,30 @@ if (prijs > 0) {
     });
 
     // naar lijst, sorteren per leverancier/product
-    productenLijst = Object.values(map).map(p => ({
-      ...p,
-      omzet: p.verkoopprijs * p.aantal
-    })).sort((a, b) => {
+    productenLijst = Object.values(map).map(p => {
+      // effectiefAantal = aantal waarvoor we betalen (na afronding naar grote doos)
+      // overschot = het verschil tussen betaald en verkocht (alleen bij truffels > 0)
+      const verpakKey = verpakkingKeyVoor(p.key);
+      let effectiefAantal = p.aantal;
+      let overschot = 0;
+      let groteDozen = 0;
+
+      if (verpakKey) {
+        const perGroteDoos = DOZEN_PER_GROTE_DOOS[verpakKey];
+        const info = berekenDozenInfo(p.aantal, perGroteDoos);
+        effectiefAantal = info.bestellen;
+        overschot = info.overschot;
+        groteDozen = info.grote;
+      }
+
+      return {
+        ...p,
+        omzet: p.verkoopprijs * p.aantal,
+        effectiefAantal,
+        overschot,
+        groteDozen
+      };
+    }).sort((a, b) => {
       if (a.leverancier !== b.leverancier) return a.leverancier.localeCompare(b.leverancier);
       return a.productLabel.localeCompare(b.productLabel);
     });
@@ -259,7 +330,7 @@ function renderWinstPerProductTabel() {
     const header = document.createElement("tr");
     header.className = "leverancier-header";
     header.innerHTML = `
-      <td colspan="8">📦 ${leverancier}</td>
+      <td colspan="9">📦 ${leverancier}</td>
     `;
     tbody.appendChild(header);
 
@@ -270,12 +341,29 @@ function renderWinstPerProductTabel() {
     // --- PRODUCTEN ---
     perLeverancier[leverancier].forEach(p => {
       const inkoopStuk = Number(inkoopMap[p.key] || 0);
-      const totaleInkoop = inkoopStuk * p.aantal;
+
+      // ⭐ inkoop op basis van wat we ECHT betalen (na afronding naar grote doos)
+      const totaleInkoop = inkoopStuk * p.effectiefAantal;
       const winst = p.omzet - totaleInkoop;
 
       subtotaalOmzet += p.omzet;
       subtotaalInkoop += totaleInkoop;
       subtotaalWinst += winst;
+
+      // "Betaald voor" kolom:
+      // - truffels: toont het effectieve aantal + hoeveelheid overschot in kleintjes
+      // - kerstrozen: gewoon het aantal (= verkocht)
+      let betaaldVoorCel;
+      if (p.overschot > 0) {
+        betaaldVoorCel = `
+          ${p.effectiefAantal}
+          <span class="overschot-badge" title="${p.groteDozen} grote dozen • ${p.overschot} overschot">
+            +${p.overschot}
+          </span>
+        `;
+      } else {
+        betaaldVoorCel = `${p.effectiefAantal}`;
+      }
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -283,13 +371,15 @@ function renderWinstPerProductTabel() {
         <td>${p.productLabel}</td>
         <td class="num">${euro(p.verkoopprijs)}</td>
         <td class="num">${p.aantal}</td>
+        <td class="num">${betaaldVoorCel}</td>
         <td class="num">${euro(p.omzet)}</td>
         <td class="num">
           <input
             class="inkoop-input"
-            type="number"
-            step="0.01"
-            value="${inkoopStuk ? inkoopStuk.toFixed(2) : ""}"
+            type="text"
+            inputmode="decimal"
+            placeholder="0,00"
+            value="${inkoopStuk ? inkoopStuk.toFixed(2).replace(".", ",") : ""}"
             data-key="${p.key}"
           />
         </td>
@@ -303,7 +393,7 @@ function renderWinstPerProductTabel() {
     const subtotaal = document.createElement("tr");
     subtotaal.className = "subtotaal-rij";
     subtotaal.innerHTML = `
-      <td colspan="4" class="label">Subtotaal ${leverancier}</td>
+      <td colspan="5" class="label">Subtotaal ${leverancier}</td>
       <td class="num">${euro(subtotaalOmzet)}</td>
       <td></td>
       <td class="num">${euro(subtotaalInkoop)}</td>
@@ -314,12 +404,18 @@ function renderWinstPerProductTabel() {
 
   // listeners opnieuw koppelen
   document.querySelectorAll(".inkoop-input").forEach(inp => {
+    // Tijdens het typen: alleen de berekeningen bijwerken, GEEN herrender
+    // (anders verspringt de cursor en kun je geen komma typen)
     inp.addEventListener("input", (e) => {
       const key = e.target.dataset.key;
-      inkoopMap[key] = Number(e.target.value || 0);
+      inkoopMap[key] = parseGetal(e.target.value);
       saveLocalInkoop();
+      herberekenAlles();
+    });
 
-      // 🔁 tabel + berekeningen volledig verversen
+    // Bij verlaten van het veld: volledige tabel herrenderen
+    // zodat de waarde mooi geformatteerd verschijnt (bv. "2,5" → "2,50")
+    inp.addEventListener("blur", () => {
       renderWinstPerProductTabel();
       herberekenAlles();
     });
@@ -344,7 +440,8 @@ function herberekenAlles() {
 
   productenLijst.forEach(p => {
     const inkoopStuk = Number(inkoopMap[p.key] || 0);
-    const totaleInkoopProduct = inkoopStuk * p.aantal;
+    // ⭐ inkoop op basis van wat we ECHT betalen (na afronding naar grote doos)
+    const totaleInkoopProduct = inkoopStuk * p.effectiefAantal;
     const winstProduct = p.omzet - totaleInkoopProduct;
 
     totaalInkoop += totaleInkoopProduct;
@@ -366,8 +463,8 @@ function herberekenAlles() {
     }
   });
 
-  const mollieKostPerBestelling = Number(document.getElementById("mollieKost").value || 0);
-  const transportKost = Number(document.getElementById("transportKost").value || 0);
+  const mollieKostPerBestelling = parseGetal(document.getElementById("mollieKost").value);
+  const transportKost = parseGetal(document.getElementById("transportKost").value);
   const totaleMollieKosten = aantalBestellingen * mollieKostPerBestelling;
 
   // bovenste samenvatting
@@ -552,7 +649,7 @@ y += titleH - 4;
     pdf.setFont(undefined, "bold");
     pdf.text("Lev.", xLev, y);
 pdf.text("Product", xProd, y);
-pdf.text("Aantal", xAantal, y, { align: "right" });
+pdf.text("Verk./Bet.", xAantal, y, { align: "right" });
 pdf.text("Omzet", xOmzet, y, { align: "right" });
 pdf.text("Inkoop", xInkoop, y, { align: "right" });
 pdf.text("Winst", xWinst, y, { align: "right" });
@@ -596,7 +693,8 @@ y += 10;
 
   perLevPdf[levNaam].forEach(p => {
     const inkoopStuk = Number(inkoopMap[p.key] || 0);
-    const totaleInkoopProduct = inkoopStuk * p.aantal;
+    // ⭐ inkoop op basis van wat we ECHT betalen (na afronding naar grote doos)
+    const totaleInkoopProduct = inkoopStuk * p.effectiefAantal;
     const winstProduct = p.omzet - totaleInkoopProduct;
 
     if (y > pageH - marginB - 10) {
@@ -609,9 +707,15 @@ y += 10;
       ? p.productLabel.slice(0, 47) + "…"
       : p.productLabel;
 
+    // Bij truffels met overschot: toon "verkocht → betaald" zodat het zichtbaar is
+    // waarom de inkoop hoger ligt dan verkocht × inkoopprijs.
+    const aantalTekst = p.overschot > 0
+      ? `${p.aantal} → ${p.effectiefAantal}`
+      : String(p.aantal);
+
     pdf.text(levNaam === "Kerstrozen" ? "K" : "T", xLev, y);
     pdf.text(prod, xProd, y);
-    pdf.text(String(p.aantal), xAantal, y, { align: "right" });
+    pdf.text(aantalTekst, xAantal, y, { align: "right" });
     pdf.text(euro(p.omzet), xOmzet, y, { align: "right" });
     pdf.text(euro(totaleInkoopProduct), xInkoop, y, { align: "right" });
     pdf.text(euro(winstProduct), xWinst, y, { align: "right" });
