@@ -15,6 +15,58 @@ import {
 // 🔹 Actieve verkoopactie
 const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
+// 🔹 Verpakkingseenheden per leverancier
+// Truffels worden per grote doos geleverd. Het bedrijf rondt altijd naar boven af:
+// verkoop je bv. 14 × 250 g, dan lever je 2 grote dozen (= 24 stuks) en heb je 10 overschot.
+const DOZEN_PER_GROTE_DOOS = {
+  truffel250: 12,
+  truffel500: 8
+};
+
+// 🔹 Helper: berekent grote dozen + bestelaantal + overschot
+function berekenDozenInfo(verkocht, perGroteDoos) {
+  const grote = verkocht > 0 ? Math.ceil(verkocht / perGroteDoos) : 0;
+  const bestellen = grote * perGroteDoos;
+  const overschot = bestellen - verkocht;
+  return { grote, bestellen, overschot };
+}
+
+// 🔹 Inkoopprijzen (gedeeld met winst.html via localStorage)
+// Zelfde key als in winst.js: winst_<actieId>_inkoopprijzen
+const LS_INKOOP_KEY = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
+
+function leesInkoopMap() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_INKOOP_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+
+// 🔹 Van (productnaam, variant) naar de vaste inkoop-key uit winst.js
+// Resultaat: "kerstrozen_wit", "truffels_250_melk", "truffels_500_donker", …
+function inkoopKeyVoor(productNaam, variant) {
+  const v = String(variant || "").toLowerCase().trim();
+  if (!v) return null;
+
+  if (productNaam === "Kerstrozen") {
+    return `kerstrozen_${v}`;
+  }
+  if (productNaam.includes("Truffels 250")) {
+    return `truffels_250_${v}`;
+  }
+  if (productNaam.includes("Truffels 500")) {
+    return `truffels_500_${v}`;
+  }
+  return null;
+}
+
+// 🔹 Euro-formatter (zelfde stijl als in winst.js)
+function euro(n) {
+  const v = Number(n || 0);
+  return "€ " + v.toFixed(2).replace(".", ",");
+}
+
 // 🔹 Firebase configuratie
 const firebaseConfig = {
   apiKey: "AIzaSyD4Pd3z6WpGbDwtpKV5glvrvJ5Ks-qCPz0",
@@ -39,6 +91,15 @@ const downloadPdfBtn = document.getElementById("downloadPdfKlas");
 const downloadLeveranciersPdf = document.getElementById("downloadLeveranciersPdf");
 const downloadPdfPerKind = document.getElementById("downloadPdfPerKind");
 
+
+// 🔹 Leveranciers-data (wordt gevuld door laadTotaalPerProduct)
+// Deze variabele wordt hergebruikt door de PDF-functies zodat we niet
+// afhankelijk zijn van de HTML-tabel (waar nu ook totaalrijen in staan).
+let leveranciersData = {
+  Kerstrozen: {},
+  Truffels250: {},
+  Truffels500: {}
+};
 
 // ============================
 // A) TOTAAL PER PRODUCT (PER LEVERANCIER)
@@ -88,42 +149,216 @@ leveranciers[leverancier][key] =
 });
 
 
-  // niets besteld
-  if (
-  Object.keys(leveranciers.Kerstrozen).length === 0
-) {
-  tabelKerstrozen.innerHTML =
-    `<tr><td colspan="3" class="muted">Geen bestellingen</td></tr>`;
+  // Beschikbaar maken voor PDF-functies
+  leveranciersData = leveranciers;
+
+  // Inkoopprijzen (gedeeld met winstpagina)
+  const inkoopMap = leesInkoopMap();
+
+  // -----------------------
+  // Kerstrozen (5 kolommen + totaalrij + factuurbalk)
+  // -----------------------
+  if (Object.keys(leveranciers.Kerstrozen).length === 0) {
+    tabelKerstrozen.innerHTML =
+      `<tr><td colspan="5" class="muted">Geen bestellingen</td></tr>`;
+    zetFactuurBalk("kerstrozen", 0, false);
+  } else {
+    let totaalKerstrozen = 0;
+    let factuurKerstrozen = 0;
+    let heeftOntbrekendePrijs = false;
+
+    Object.keys(leveranciers.Kerstrozen).forEach(k => {
+      const [naam, variant] = k.split("|||");
+      const aantal = leveranciers.Kerstrozen[k];
+      totaalKerstrozen += aantal;
+
+      // Prijs uit de gedeelde inkoopMap
+      const inkKey = inkoopKeyVoor(naam, variant);
+      const prijsStuk = inkKey ? Number(inkoopMap[inkKey] || 0) : 0;
+      const regelTotaal = prijsStuk * aantal;
+      factuurKerstrozen += regelTotaal;
+
+      const prijsCel = prijsStuk > 0
+        ? euro(prijsStuk)
+        : `<span class="prijs-ontbreekt" title="Inkoopprijs invullen via 'Bekijk winstberekening'">–</span>`;
+      const totaalCel = prijsStuk > 0 ? euro(regelTotaal) : "–";
+      if (prijsStuk === 0) heeftOntbrekendePrijs = true;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${naam}</td>
+        <td>${variant}</td>
+        <td class="num">${aantal}</td>
+        <td class="num">${prijsCel}</td>
+        <td class="num">${totaalCel}</td>
+      `;
+      tabelKerstrozen.appendChild(tr);
+    });
+
+    // Totaalrij
+    const trTotaal = document.createElement("tr");
+    trTotaal.className = "totaalrij";
+    trTotaal.innerHTML = `
+      <td colspan="2"><strong>Totaal kerstrozen</strong></td>
+      <td class="num"><strong>${totaalKerstrozen}</strong></td>
+      <td></td>
+      <td class="num"><strong>${euro(factuurKerstrozen)}</strong></td>
+    `;
+    tabelKerstrozen.appendChild(trTotaal);
+
+    // Bewaar voor PDF
+    leveranciersData._kerstrozenFactuur = factuurKerstrozen;
+    leveranciersData._kerstrozenOntbreektPrijs = heeftOntbrekendePrijs;
+
+    zetFactuurBalk("kerstrozen", factuurKerstrozen, heeftOntbrekendePrijs);
+  }
+
+  // -----------------------
+  // Truffels 250 g (7 kolommen + totaalrij)
+  // -----------------------
+  const factuur250 = renderTruffelTabel(
+    tabelTruffels250,
+    leveranciers.Truffels250,
+    DOZEN_PER_GROTE_DOOS.truffel250,
+    inkoopMap
+  );
+
+  // -----------------------
+  // Truffels 500 g (7 kolommen + totaalrij)
+  // -----------------------
+  const factuur500 = renderTruffelTabel(
+    tabelTruffels500,
+    leveranciers.Truffels500,
+    DOZEN_PER_GROTE_DOOS.truffel500,
+    inkoopMap
+  );
+
+  // Gezamenlijke factuurbalk voor alle truffels
+  const totaalTruffels = factuur250.bedrag + factuur500.bedrag;
+  const heeftTruffelsBestellingen =
+    Object.keys(leveranciers.Truffels250).length > 0 ||
+    Object.keys(leveranciers.Truffels500).length > 0;
+  const truffelsOntbreektPrijs = factuur250.ontbreekt || factuur500.ontbreekt;
+
+  leveranciersData._truffels250Factuur = factuur250.bedrag;
+  leveranciersData._truffels500Factuur = factuur500.bedrag;
+  leveranciersData._truffelsFactuur = totaalTruffels;
+  leveranciersData._truffelsOntbreektPrijs = truffelsOntbreektPrijs;
+
+  if (heeftTruffelsBestellingen) {
+    zetFactuurBalk("truffels", totaalTruffels, truffelsOntbreektPrijs);
+  } else {
+    zetFactuurBalk("truffels", 0, false);
+  }
 }
 
-  // Kerstrozen
-  if (Object.keys(leveranciers.Kerstrozen).length > 0) {
-  Object.keys(leveranciers.Kerstrozen).forEach(k => {
+// ============================
+// Helper: factuurbalk onder een leverancierstabel
+// ============================
+function zetFactuurBalk(leverancier, bedrag, ontbreektPrijs) {
+  const containerId = leverancier === "kerstrozen"
+    ? "kerstrozenFactuurTotaal"
+    : "truffelsFactuurTotaal";
+  const bedragId = leverancier === "kerstrozen"
+    ? "kerstrozenFactuurBedrag"
+    : "truffelsFactuurBedrag";
+
+  const container = document.getElementById(containerId);
+  const bedragEl = document.getElementById(bedragId);
+  if (!container || !bedragEl) return;
+
+  if (bedrag === 0 && !ontbreektPrijs) {
+    container.classList.add("verborgen");
+    return;
+  }
+
+  container.classList.remove("verborgen");
+  bedragEl.textContent = euro(bedrag);
+
+  // Hint als inkoopprijs nog niet ingevuld is
+  let hintEl = container.querySelector(".prijs-hint");
+  if (ontbreektPrijs) {
+    if (!hintEl) {
+      hintEl = document.createElement("div");
+      hintEl.className = "prijs-hint";
+      hintEl.textContent =
+        "Vul de inkoopprijzen in via 'Bekijk winstberekening' voor een volledig totaal.";
+      container.appendChild(hintEl);
+    }
+  } else if (hintEl) {
+    hintEl.remove();
+  }
+}
+
+// ============================
+// Helper: render één truffel-tabel met dozen-berekening + inkoopprijzen
+// Retourneert: { bedrag: totale factuur, ontbreekt: boolean }
+// ============================
+function renderTruffelTabel(tbodyEl, data, perGroteDoos, inkoopMap) {
+  if (Object.keys(data).length === 0) {
+    tbodyEl.innerHTML =
+      `<tr><td colspan="7" class="muted">Geen bestellingen</td></tr>`;
+    return { bedrag: 0, ontbreekt: false };
+  }
+
+  let totVerkocht = 0;
+  let totGrote = 0;
+  let totBestellen = 0;
+  let totOverschot = 0;
+  let totFactuur = 0;
+  let ontbreekt = false;
+
+  Object.keys(data).forEach(k => {
     const [naam, variant] = k.split("|||");
+    const verkocht = data[k];
+    const info = berekenDozenInfo(verkocht, perGroteDoos);
+
+    totVerkocht += verkocht;
+    totGrote += info.grote;
+    totBestellen += info.bestellen;
+    totOverschot += info.overschot;
+
+    // Inkoopprijs uit gedeelde inkoopMap
+    const inkKey = inkoopKeyVoor(naam, variant);
+    const prijsStuk = inkKey ? Number(inkoopMap[inkKey] || 0) : 0;
+    // Let op: factuur = bestellen (inclusief overschot) × prijs
+    const regelFactuur = prijsStuk * info.bestellen;
+    totFactuur += regelFactuur;
+
+    const prijsCel = prijsStuk > 0
+      ? euro(prijsStuk)
+      : `<span class="prijs-ontbreekt" title="Inkoopprijs invullen via 'Bekijk winstberekening'">–</span>`;
+    const totaalCel = prijsStuk > 0 ? euro(regelFactuur) : "–";
+    if (prijsStuk === 0) ontbreekt = true;
+
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Kerstrozen[k]}</td>`;
-    tabelKerstrozen.appendChild(tr);
+    tr.innerHTML = `
+      <td>${variant}</td>
+      <td class="num">${verkocht}</td>
+      <td class="num">${info.grote}</td>
+      <td class="num">${info.bestellen}</td>
+      <td class="num ${info.overschot > 0 ? "overschot-pos" : ""}">${info.overschot}</td>
+      <td class="num">${prijsCel}</td>
+      <td class="num">${totaalCel}</td>
+    `;
+    tbodyEl.appendChild(tr);
   });
-}
 
+  // Totaalrij
+  const trTotaal = document.createElement("tr");
+  trTotaal.className = "totaalrij";
+  trTotaal.innerHTML = `
+    <td><strong>Totaal</strong></td>
+    <td class="num"><strong>${totVerkocht}</strong></td>
+    <td class="num"><strong>${totGrote}</strong></td>
+    <td class="num"><strong>${totBestellen}</strong></td>
+    <td class="num"><strong>${totOverschot}</strong></td>
+    <td></td>
+    <td class="num"><strong>${euro(totFactuur)}</strong></td>
+  `;
+  tbodyEl.appendChild(trTotaal);
 
-  // Truffels 250 g
-Object.keys(leveranciers.Truffels250).forEach(k => {
-  const [naam, variant] = k.split("|||");
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels250[k]}</td>`;
-  tabelTruffels250.appendChild(tr);
-});
-
-// Truffels 500 g
-Object.keys(leveranciers.Truffels500).forEach(k => {
-  const [naam, variant] = k.split("|||");
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${naam}</td><td>${variant}</td><td>${leveranciers.Truffels500[k]}</td>`;
-  tabelTruffels500.appendChild(tr);
-});
-
-
+  return { bedrag: totFactuur, ontbreekt };
 }
 
 
@@ -551,7 +786,7 @@ async function genereerPdfPerKlas(klas) {
   const productStructuur = [
     { naam: "Kerstrozen", varianten: ["wit", "roze", "rood"] },
     { naam: "Truffels 250 g", varianten: ["wit", "melk", "donker"] },
-    { naam: "Truffel 500 g", varianten: ["wit", "melk", "donker"] }
+    { naam: "Truffels 500 g", varianten: ["wit", "melk", "donker"] }
   ];
 
   const kolommen = [];
@@ -854,38 +1089,253 @@ function _tekenKaderTitel(pdf, x, y, w, titel) {
   return y + 14;
 }
 
-function _tekenTabelRijen(pdf, x, y, w, rows) {
+// ----------------------------
+// FACTUUR-BALK IN PDF (groene balk met "Te betalen aan leverancier")
+// ----------------------------
+function _tekenFactuurBalk(pdf, x, y, w, label, bedrag) {
+  const h = 11;
+  pdf.setFillColor(230, 240, 234);  // licht groen
+  pdf.setDrawColor(45, 125, 78);    // groene rand (bovenlijn)
+  pdf.setLineWidth(0.6);
+  pdf.rect(x, y, w, h, "F");
+  // Bovenlijn dikker voor visueel effect
+  pdf.line(x, y, x + w, y);
+  pdf.setLineWidth(0.2);
+
+  pdf.setTextColor(26, 92, 58);     // donkergroen voor tekst
+  pdf.setFont(undefined, "bold");
+  pdf.setFontSize(12);
+  pdf.text(label, x + 5, y + 7.5);
+  pdf.text(bedrag, x + w - 5, y + 7.5, { align: "right" });
+
+  // reset
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFont(undefined, "normal");
+  return y + h + 6;
+}
+
+// ----------------------------
+// KERSTROZEN-TABEL IN PDF
+// product | variant | aantal | prijs/stuk | totaal + totaalrij
+// ----------------------------
+function _tekenKerstrozenTabel(pdf, x, y, w, data, inkoopMap) {
+  // Kolom-x-posities: Product links, Variant iets verder,
+  // rechts-uitgelijnde cijferkolommen met voldoende ruimte ertussen.
+  // Voor A4 portrait met w ≈ 170mm:
+  //   Product (links) | Variant (links) | Aantal (rechts) | Prijs (rechts) | Totaal (rechts)
+  const xProduct = x + 5;
+  const xVariant = x + 55;
+  const xAantal = x + 100;   // tekst eindigt hier (rechts-uitgelijnd)
+  const xPrijs = x + 135;    // tekst eindigt hier
+  const xTotaal = x + w - 5; // tekst eindigt hier (helemaal rechts)
+
   pdf.setFontSize(11);
+
+  // Kolomkoppen
+  pdf.setFont(undefined, "bold");
+  pdf.setFillColor(252, 252, 252);
+  pdf.rect(x, y - 5, w, 7, "F");
+  pdf.text("Product", xProduct, y);
+  pdf.text("Variant", xVariant, y);
+  pdf.text("Aantal", xAantal, y, { align: "right" });
+  pdf.text("Prijs/stuk", xPrijs, y, { align: "right" });
+  pdf.text("Totaal", xTotaal, y, { align: "right" });
+  y += 3;
+  pdf.setDrawColor(210);
+  pdf.line(x, y, x + w, y);
+  y += 6;
   pdf.setFont(undefined, "normal");
 
-  rows.forEach(row => {
-    pdf.text(row.cells[0].innerText, x + 5, y);                 // product
-    pdf.text(row.cells[1].innerText, x + 90, y);                // variant
-    pdf.text(row.cells[2].innerText, x + w - 10, y, { align: "right" }); // aantal
+  const keys = Object.keys(data);
+
+  if (keys.length === 0) {
+    pdf.setTextColor(130, 130, 130);
+    pdf.text("Geen bestellingen", xProduct, y);
+    pdf.setTextColor(0, 0, 0);
+    return { y: y + 6, factuur: 0 };
+  }
+
+  let totaal = 0;
+  let factuur = 0;
+
+  keys.forEach(k => {
+    const [naam, variant] = k.split("|||");
+    const aantal = data[k];
+    totaal += aantal;
+
+    const inkKey = inkoopKeyVoor(naam, variant);
+    const prijs = inkKey ? Number(inkoopMap[inkKey] || 0) : 0;
+    const regelTotaal = prijs * aantal;
+    factuur += regelTotaal;
+
+    pdf.text(naam, xProduct, y);
+    pdf.text(variant, xVariant, y);
+    pdf.text(String(aantal), xAantal, y, { align: "right" });
+    pdf.text(prijs > 0 ? euro(prijs) : "–", xPrijs, y, { align: "right" });
+    pdf.text(prijs > 0 ? euro(regelTotaal) : "–", xTotaal, y, { align: "right" });
     y += 6.5;
   });
 
-  return y;
+  // Totaalrij
+  y += 1;
+  pdf.setDrawColor(180);
+  pdf.line(x, y - 3, x + w, y - 3);
+  pdf.setFont(undefined, "bold");
+  pdf.text("Totaal kerstrozen", xProduct, y + 2);
+  pdf.text(String(totaal), xAantal, y + 2, { align: "right" });
+  pdf.text(euro(factuur), xTotaal, y + 2, { align: "right" });
+  pdf.setFont(undefined, "normal");
+  y += 8;
+
+  return { y, factuur };
+}
+
+// ----------------------------
+// TRUFFEL-TABEL IN PDF (landscape: 7 kolommen)
+// smaak | verkocht | grote dozen | bestellen | overschot | prijs/stuk | totaal
+// ----------------------------
+function _tekenTruffelTabel(pdf, x, y, w, data, perGroteDoos, inkoopMap) {
+  // x-posities voor 7 kolommen (landscape, w ≈ 267mm)
+  // Smaak links, de rest rechts-uitgelijnd met ruime tussenafstand.
+  const xSmaak = x + 5;
+  const xVerkocht = x + w - 220;
+  const xGrote = x + w - 175;
+  const xBestellen = x + w - 130;
+  const xOverschot = x + w - 90;
+  const xPrijs = x + w - 50;
+  const xTotaal = x + w - 5;
+
+  // Kolomkoppen
+  pdf.setFont(undefined, "bold");
+  pdf.setFontSize(10);
+  pdf.setFillColor(252, 252, 252);
+  pdf.rect(x, y - 5, w, 7, "F");
+  pdf.text("Smaak", xSmaak, y);
+  pdf.text("Verkocht", xVerkocht, y, { align: "right" });
+  pdf.text("Grote dozen", xGrote, y, { align: "right" });
+  pdf.text("Bestellen", xBestellen, y, { align: "right" });
+  pdf.text("Overschot", xOverschot, y, { align: "right" });
+  pdf.text("Prijs/stuk", xPrijs, y, { align: "right" });
+  pdf.text("Totaal", xTotaal, y, { align: "right" });
+  y += 3;
+  pdf.setDrawColor(210);
+  pdf.line(x, y, x + w, y);
+  y += 6;
+  pdf.setFont(undefined, "normal");
+  pdf.setFontSize(11);
+
+  const keys = Object.keys(data);
+
+  if (keys.length === 0) {
+    pdf.setTextColor(130, 130, 130);
+    pdf.text("Geen bestellingen", xSmaak, y);
+    pdf.setTextColor(0, 0, 0);
+    return { y: y + 6, factuur: 0 };
+  }
+
+  let totVerkocht = 0;
+  let totGrote = 0;
+  let totBestellen = 0;
+  let totOverschot = 0;
+  let totFactuur = 0;
+
+  keys.forEach(k => {
+    const [naam, variant] = k.split("|||");
+    const verkocht = data[k];
+    const info = berekenDozenInfo(verkocht, perGroteDoos);
+
+    totVerkocht += verkocht;
+    totGrote += info.grote;
+    totBestellen += info.bestellen;
+    totOverschot += info.overschot;
+
+    const inkKey = inkoopKeyVoor(naam, variant);
+    const prijs = inkKey ? Number(inkoopMap[inkKey] || 0) : 0;
+    // factuur = bestellen × prijs (inclusief overschot — dat is wat er gefactureerd wordt)
+    const regelFactuur = prijs * info.bestellen;
+    totFactuur += regelFactuur;
+
+    pdf.text(variant, xSmaak, y);
+    pdf.text(String(verkocht), xVerkocht, y, { align: "right" });
+    pdf.text(String(info.grote), xGrote, y, { align: "right" });
+    pdf.text(String(info.bestellen), xBestellen, y, { align: "right" });
+    pdf.text(String(info.overschot), xOverschot, y, { align: "right" });
+    pdf.text(prijs > 0 ? euro(prijs) : "–", xPrijs, y, { align: "right" });
+    pdf.text(prijs > 0 ? euro(regelFactuur) : "–", xTotaal, y, { align: "right" });
+    y += 6.5;
+  });
+
+  // Totaalrij
+  y += 1;
+  pdf.setDrawColor(180);
+  pdf.line(x, y - 3, x + w, y - 3);
+  pdf.setFont(undefined, "bold");
+  pdf.text("Totaal", xSmaak, y + 2);
+  pdf.text(String(totVerkocht), xVerkocht, y + 2, { align: "right" });
+  pdf.text(String(totGrote), xGrote, y + 2, { align: "right" });
+  pdf.text(String(totBestellen), xBestellen, y + 2, { align: "right" });
+  pdf.text(String(totOverschot), xOverschot, y + 2, { align: "right" });
+  pdf.text(euro(totFactuur), xTotaal, y + 2, { align: "right" });
+  pdf.setFont(undefined, "normal");
+  y += 8;
+
+  // Info-regeltje onder de tabel
+  pdf.setFontSize(9);
+  pdf.setTextColor(110, 110, 110);
+  pdf.text(
+    `${perGroteDoos} doosjes per grote doos • "Bestellen" = aantal grote dozen × ${perGroteDoos} • "Totaal" = bestellen × prijs/stuk`,
+    x,
+    y + 2
+  );
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(11);
+  y += 6;
+
+  return { y, factuur: totFactuur };
 }
 
 async function genereerPdfTruffels() {
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  // ⭐ LANDSCAPE — 7 kolommen passen niet netjes op portrait
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
   let y = await _tekenKopEnVoet(pdf, "Overzicht leverancier – Truffels");
 
-  const x = 20;
+  const inkoopMap = leesInkoopMap();
+
+  const x = 15;
   const pageW = pdf.internal.pageSize.getWidth();
   const w = pageW - x * 2;
 
   // Truffels 250 g
   y = _tekenKaderTitel(pdf, x, y, w, "Truffels 250 g");
-  y = _tekenTabelRijen(pdf, x, y, w, [...tabelTruffels250.rows]);
-  y += 10;
+  const res250 = _tekenTruffelTabel(
+    pdf, x, y, w,
+    leveranciersData.Truffels250,
+    DOZEN_PER_GROTE_DOOS.truffel250,
+    inkoopMap
+  );
+  y = res250.y + 6;
 
   // Truffels 500 g
   y = _tekenKaderTitel(pdf, x, y, w, "Truffels 500 g");
-  y = _tekenTabelRijen(pdf, x, y, w, [...tabelTruffels500.rows]);
+  const res500 = _tekenTruffelTabel(
+    pdf, x, y, w,
+    leveranciersData.Truffels500,
+    DOZEN_PER_GROTE_DOOS.truffel500,
+    inkoopMap
+  );
+  y = res500.y + 8;
+
+  // Gezamenlijke factuurbalk
+  const totaalTruffels = res250.factuur + res500.factuur;
+  if (totaalTruffels > 0) {
+    _tekenFactuurBalk(
+      pdf, x, y, w,
+      "Te betalen aan leverancier truffels (250 g + 500 g)",
+      euro(totaalTruffels)
+    );
+  }
 
   pdf.save("leverancier_truffels.pdf");
 }
@@ -896,12 +1346,23 @@ async function genereerPdfKerstrozen() {
 
   let y = await _tekenKopEnVoet(pdf, "Overzicht leverancier – Kerstrozen");
 
+  const inkoopMap = leesInkoopMap();
+
   const x = 20;
   const pageW = pdf.internal.pageSize.getWidth();
   const w = pageW - x * 2;
 
   y = _tekenKaderTitel(pdf, x, y, w, "Kerstrozen");
-  y = _tekenTabelRijen(pdf, x, y, w, [...tabelKerstrozen.rows]);
+  const res = _tekenKerstrozenTabel(pdf, x, y, w, leveranciersData.Kerstrozen, inkoopMap);
+  y = res.y + 6;
+
+  if (res.factuur > 0) {
+    _tekenFactuurBalk(
+      pdf, x, y, w,
+      "Te betalen aan leverancier kerstrozen",
+      euro(res.factuur)
+    );
+  }
 
   pdf.save("leverancier_kerstrozen.pdf");
 }
@@ -915,9 +1376,78 @@ async function genereerLeveranciersPdf() {
 
 
 // ============================
+// TABBLADEN (compacte knoppenbalk)
+// ============================
+function activeerTab(tabNaam) {
+  document.querySelectorAll(".tab-knop").forEach(btn => {
+    const actief = btn.dataset.tab === tabNaam;
+    btn.setAttribute("aria-selected", actief ? "true" : "false");
+  });
+  document.querySelectorAll(".tab-panel").forEach(panel => {
+    panel.hidden = panel.dataset.panel !== tabNaam;
+  });
+  const hint = document.getElementById("tabHint");
+  if (hint) hint.hidden = true;
+}
+
+function bindTabKnoppen() {
+  document.querySelectorAll(".tab-knop").forEach(btn => {
+    btn.addEventListener("click", () => activeerTab(btn.dataset.tab));
+  });
+}
+
+// ============================
+// META-LABELS IN TABS BIJWERKEN
+// (vb. "5 • € 12,50" naast 'Kerstrozen')
+// ============================
+function updateTabMetas() {
+  const metaK = document.getElementById("tabMetaKerstrozen");
+  const metaT = document.getElementById("tabMetaTruffels");
+
+  // Kerstrozen: aantal + factuur
+  let aantalK = 0;
+  Object.values(leveranciersData.Kerstrozen || {}).forEach(v => aantalK += v);
+  if (metaK) {
+    if (aantalK === 0) {
+      metaK.textContent = "geen bestellingen";
+    } else {
+      const factuur = leveranciersData._kerstrozenFactuur || 0;
+      metaK.textContent = factuur > 0
+        ? `${aantalK} stuks • ${euro(factuur)}`
+        : `${aantalK} stuks`;
+    }
+  }
+
+  // Truffels: aantal doosjes over beide gewichten + gezamenlijke factuur
+  let aantalT = 0;
+  Object.values(leveranciersData.Truffels250 || {}).forEach(v => aantalT += v);
+  Object.values(leveranciersData.Truffels500 || {}).forEach(v => aantalT += v);
+  if (metaT) {
+    if (aantalT === 0) {
+      metaT.textContent = "geen bestellingen";
+    } else {
+      const factuur = leveranciersData._truffelsFactuur || 0;
+      metaT.textContent = factuur > 0
+        ? `${aantalT} doosjes • ${euro(factuur)}`
+        : `${aantalT} doosjes`;
+    }
+  }
+}
+
+// ============================
 // INIT
 // ============================
-laadTotaalPerProduct();
+bindTabKnoppen();
+
+// Data laden; daarna meta-labels bijwerken
+laadTotaalPerProduct().then(updateTabMetas);
+
+// Automatisch bijwerken als iemand terugkomt van de winstpagina
+// (dan kunnen de inkoopprijzen gewijzigd zijn)
+window.addEventListener("focus", () => {
+  laadTotaalPerProduct().then(updateTabMetas);
+});
+
 const winstBtn = document.getElementById("openWinstBerekening");
 
 if (winstBtn) {
