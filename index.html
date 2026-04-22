@@ -24,6 +24,45 @@
     <section class="producten-blok">
       <div id="status" class="status"></div>
       <div id="producten" class="producten"></div>
+
+      <!-- SPONSORING -->
+      <div class="sponsor-sectie">
+        <div class="sponsor-sectie-kop">
+          <span class="sponsor-hart">💚</span>
+          <h3>Liever gewoon steunen?</h3>
+        </div>
+        <p class="sponsor-uitleg">
+          Wil je geen producten bestellen, maar onze school wel een duwtje in de rug geven?
+          Elk bedrag is welkom en komt integraal ten goede aan onze schoolwerking.
+        </p>
+
+        <p class="sponsor-label">Kies een bedrag:</p>
+        <div class="sponsor-knoppen">
+          <button type="button" class="sponsor-knop" data-bedrag="5">€ 5</button>
+          <button type="button" class="sponsor-knop" data-bedrag="10">€ 10</button>
+          <button type="button" class="sponsor-knop" data-bedrag="20">€ 20</button>
+          <button type="button" class="sponsor-knop" data-bedrag="50">€ 50</button>
+        </div>
+
+        <div class="sponsor-ander">
+          <span>of ander bedrag:</span>
+          <div class="sponsor-ander-invoer">
+            <span class="sponsor-ander-euro">€</span>
+            <input
+              type="text"
+              inputmode="decimal"
+              id="sponsorAnderBedrag"
+              placeholder="0,00"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div id="sponsorBevestiging" class="sponsor-bevestiging verborgen">
+          Gekozen: <strong id="sponsorBevestigingBedrag">€ 0,00</strong>
+          <button type="button" id="sponsorReset" class="sponsor-reset">verwijderen</button>
+        </div>
+      </div>
     </section>
 
     <!-- MANDJE / AFREKENEN -->
@@ -34,6 +73,15 @@
         <!-- Stap 1: mandje -->
         <div id="mandjeLijst" class="mandje-lijst">
           <p class="muted">Nog geen producten gekozen.</p>
+        </div>
+
+        <!-- Stap 1b: sponsoring tonen in mandje als ingevuld -->
+        <div id="sponsorInMandje" class="sponsor-in-mandje verborgen">
+          <div class="sponsor-in-mandje-rij">
+            <span>💚 Sponsoring</span>
+            <strong id="sponsorInMandjeBedrag">€ 0,00</strong>
+            <button id="sponsorVerwijderen" class="sponsor-verwijder" title="Sponsoring verwijderen" aria-label="Sponsoring verwijderen">×</button>
+          </div>
         </div>
 
         <!-- Stap 2: leerlinggegevens (PAS BIJ PRODUCTEN) -->
