@@ -8,7 +8,10 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  doc,
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // 🔹 Firebase configuratie (identiek aan jouw huidige)
@@ -49,13 +52,86 @@ function berekenDozenInfo(verkocht, perGroteDoos) {
   return { grote, bestellen, overschot };
 }
 
-// localStorage keys
+// localStorage keys (fallback als Firestore niet bereikbaar is)
 const LS_SETTINGS = `winst_${ACTIEVE_ACTIE}_settings`;
 const LS_INKOOP = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
+
+// Firestore-instellingen (gedeeld tussen alle gebruikers)
+const INSTELLINGEN_DOC_PAD = ["instellingen", ACTIEVE_ACTIE];
+
+// Voorkom dat we schrijven vlak na laden (voorkomt race condition)
+let initieleLoadKlaar = false;
+
+async function leesInstellingenUitFirestore() {
+  try {
+    const ref = doc(db, ...INSTELLINGEN_DOC_PAD);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return snap.data();
+  } catch (err) {
+    console.warn("Kon Firestore-instellingen niet lezen, val terug op localStorage:", err);
+  }
+  return null;
+}
+
+// Debounce: schrijf pas 800 ms na de laatste wijziging (voorkomt veel schrijfacties bij typen)
+let schrijfTimer = null;
+function schrijfInstellingenNaarFirestore() {
+  if (!initieleLoadKlaar) return; // nog niet klaar met initiaal laden
+
+  if (schrijfTimer) clearTimeout(schrijfTimer);
+  schrijfTimer = setTimeout(async () => {
+    try {
+      const mollieKost = parseGetal(document.getElementById("mollieKost").value);
+      const transportKost = parseGetal(document.getElementById("transportKost").value);
+      const ref = doc(db, ...INSTELLINGEN_DOC_PAD);
+      await setDoc(
+        ref,
+        {
+          mollieKost,
+          transportKost,
+          inkoopprijzen: inkoopMap,
+          aangepastOp: new Date()
+        },
+        { merge: true }
+      );
+      toonSyncStatus("opgeslagen");
+    } catch (err) {
+      console.error("Kon Firestore-instellingen niet schrijven:", err);
+      toonSyncStatus("fout");
+    }
+  }, 800);
+}
+
+// Kleine status-indicator rechtsboven
+function toonSyncStatus(status) {
+  const el = document.getElementById("syncStatus");
+  if (!el) return;
+  if (status === "opgeslagen") {
+    el.textContent = "✓ opgeslagen";
+    el.className = "sync-status ok";
+  } else if (status === "bezig") {
+    el.textContent = "opslaan…";
+    el.className = "sync-status bezig";
+  } else if (status === "fout") {
+    el.textContent = "⚠ offline — lokaal bewaard";
+    el.className = "sync-status fout";
+  }
+  // Na 2,5 s verdwijnen (behalve bij fout)
+  if (status === "opgeslagen") {
+    setTimeout(() => {
+      if (el.classList.contains("ok")) {
+        el.textContent = "";
+        el.className = "sync-status";
+      }
+    }, 2500);
+  }
+}
+
 
 // State
 let aantalBestellingen = 0;
 let totaleOmzet = 0;
+let totaleSponsor = 0;
 let productenLijst = []; // {key, leverancier, productLabel, verkoopprijs, aantal, omzet}
 let inkoopMap = {};      // key -> inkoop/stuk (number)
 
@@ -114,11 +190,33 @@ function leverancierVanItem(naamLower) {
   return "Onbekend";
 }
 
-function loadLocal() {
+// Laad instellingen: eerst uit Firestore (gedeeld), bij fout terugvallen op localStorage
+async function loadInstellingen() {
+  const fsData = await leesInstellingenUitFirestore();
+
+  if (fsData) {
+    // Uit Firestore
+    if (typeof fsData.mollieKost !== "undefined") {
+      document.getElementById("mollieKost").value =
+        Number(fsData.mollieKost).toFixed(2).replace(".", ",");
+    }
+    if (typeof fsData.transportKost !== "undefined") {
+      document.getElementById("transportKost").value =
+        Number(fsData.transportKost).toFixed(2).replace(".", ",");
+    }
+    if (fsData.inkoopprijzen && typeof fsData.inkoopprijzen === "object") {
+      inkoopMap = { ...fsData.inkoopprijzen };
+    }
+    // Ook naar localStorage schrijven als offline-backup
+    saveLocalSettings();
+    saveLocalInkoop();
+    return;
+  }
+
+  // Terugvallen op localStorage
   try {
     const s = JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}");
     if (typeof s.mollieKost !== "undefined") {
-      // Toon opgeslagen waarde in Belgische komma-notatie
       document.getElementById("mollieKost").value =
         Number(s.mollieKost).toFixed(2).replace(".", ",");
     }
@@ -165,8 +263,12 @@ document.addEventListener("DOMContentLoaded", () => {
     downloadBtn.addEventListener("click", downloadWinstPdf);
   }
 
-  // load local values
-  loadLocal();
+  // Eerst instellingen laden (Firestore eerst, anders localStorage)
+  loadInstellingen().then(() => {
+    initieleLoadKlaar = true;
+    // Data pas laden nadat instellingen binnen zijn (zodat de winstberekening klopt)
+    laadBasisGegevens();
+  });
 
   // live herberekenen bij wijziging van kosten
   const mollieEl = document.getElementById("mollieKost");
@@ -174,10 +276,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   mollieEl.addEventListener("input", () => {
     saveLocalSettings();
+    schrijfInstellingenNaarFirestore();
     herberekenAlles();
   });
   transportEl.addEventListener("input", () => {
     saveLocalSettings();
+    schrijfInstellingenNaarFirestore();
     herberekenAlles();
   });
 
@@ -190,9 +294,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const n = parseGetal(transportEl.value);
     transportEl.value = n.toFixed(2).replace(".", ",");
   });
-
-  // data laden
-  laadBasisGegevens();
 });
 
 // ===============================
@@ -221,6 +322,7 @@ async function laadBasisGegevens() {
 
     // totals
     totaleOmzet = 0;
+    totaleSponsor = 0;
     aantalBestellingen = 0;
 
     // map per productKey (start van vaste producten)
@@ -240,6 +342,7 @@ productenLijst.forEach(p => {
       const data = doc.data();
       aantalBestellingen++;
       totaleOmzet += Number(data.totaal || 0);
+      totaleSponsor += Number(data.sponsorBedrag || 0);
 
       const items = Object.values(data.bestelling || {});
       items.forEach(item => {
@@ -297,6 +400,8 @@ if (prijs > 0) {
     // samenvatting bovenaan
     document.getElementById("totaleOmzet").textContent = euro(totaleOmzet);
     document.getElementById("aantalBestellingen").textContent = String(aantalBestellingen);
+    const sponsorEl = document.getElementById("totaleSponsor");
+    if (sponsorEl) sponsorEl.textContent = euro(totaleSponsor);
 
     // tabel renderen
     renderWinstPerProductTabel();
@@ -410,6 +515,7 @@ function renderWinstPerProductTabel() {
       const key = e.target.dataset.key;
       inkoopMap[key] = parseGetal(e.target.value);
       saveLocalInkoop();
+      schrijfInstellingenNaarFirestore();
       herberekenAlles();
     });
 
@@ -473,6 +579,8 @@ function herberekenAlles() {
 
   // resultaatblok links
   document.getElementById("resultaatOmzet").textContent = euro(totaleOmzet);
+  const resSponsor = document.getElementById("resultaatSponsor");
+  if (resSponsor) resSponsor.textContent = euro(totaleSponsor);
   document.getElementById("resultaatInkoop").textContent = euro(totaalInkoop);
   document.getElementById("resultaatMollie").textContent = euro(totaleMollieKosten);
   document.getElementById("resultaatTransport").textContent = euro(transportKost);
@@ -739,7 +847,7 @@ const lineH = 6;
 const boxW = pageW - marginL - marginR;
 
 // Hoogte berekenen (titel + 4 lijnen + netto winst)
-const boxHSamenvatting = 10 + (4 * lineH) + 14;
+const boxHSamenvatting = 10 + (5 * lineH) + 14;
 
 
 // Kader
@@ -760,6 +868,7 @@ let yy = startY + 16;
 
 [
   ["Totale omzet", document.getElementById("resultaatOmzet").textContent],
+  ["Waarvan sponsoring", euro(totaleSponsor)],
   ["Totale inkoop", document.getElementById("resultaatInkoop").textContent],
   ["Mollie-kosten", document.getElementById("resultaatMollie").textContent],
   ["Transportkosten", document.getElementById("resultaatTransport").textContent],
