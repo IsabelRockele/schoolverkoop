@@ -73,8 +73,32 @@ const emailKoperInput = document.getElementById("emailKoper");
 const bestelKnop = document.getElementById("bestelKnop");
 const nieuweBestellingKnop = document.getElementById("nieuweBestellingKnop");
 
+// Sponsor-elementen
+const sponsorKnoppen = document.querySelectorAll(".sponsor-knop");
+const sponsorAnderBedragInput = document.getElementById("sponsorAnderBedrag");
+const sponsorBevestigingEl = document.getElementById("sponsorBevestiging");
+const sponsorBevestigingBedragEl = document.getElementById("sponsorBevestigingBedrag");
+const sponsorResetKnop = document.getElementById("sponsorReset");
+const sponsorInMandjeEl = document.getElementById("sponsorInMandje");
+const sponsorInMandjeBedragEl = document.getElementById("sponsorInMandjeBedrag");
+const sponsorVerwijderenMandjeKnop = document.getElementById("sponsorVerwijderen");
+
 let mandje = {};
+let sponsorBedrag = 0;  // sponsor-bedrag in euro's (0 = geen sponsor)
 let bestellingVergrendeld = false;
+
+// Komma-of-punt parser (accepteert "2,50" en "2.50")
+function parseGetal(str) {
+  if (!str) return 0;
+  const s = String(str).replace(",", ".").trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// Formatteer bedrag naar € x,yz
+function formatEuro(n) {
+  return "€ " + Number(n || 0).toFixed(2).replace(".", ",");
+}
 
 // hiermee kunnen we straks alle productkaart-aantallen netjes resetten
 const productControls = [];
@@ -211,8 +235,8 @@ function renderMandje() {
 
   const items = Object.values(mandje);
 
-  // geen producten
-  if (items.length === 0) {
+  // Niks in mandje én geen sponsor: startscherm
+  if (items.length === 0 && sponsorBedrag === 0) {
     mandjeEl.innerHTML = `<p class="muted">Nog geen producten gekozen.</p>`;
     totaalEl.textContent = "€ 0";
 
@@ -222,8 +246,13 @@ function renderMandje() {
     return;
   }
 
-  // producten aanwezig → leerlinggegevens tonen
+  // Iets in mandje of sponsor ingevuld → leerlinggegevens tonen
   leerlingGegevensEl.classList.remove("verborgen");
+
+  // Geen producten, enkel sponsor → vriendelijke boodschap
+  if (items.length === 0 && sponsorBedrag > 0) {
+    mandjeEl.innerHTML = `<p class="muted">Je bestelling bestaat uit een sponsorbijdrage.</p>`;
+  }
 
   items.forEach(item => {
     const rij = document.createElement("div");
@@ -296,7 +325,9 @@ verwijderBtn.onclick = () => {
     mandjeEl.appendChild(rij);
   });
 
-  totaalEl.textContent = `€ ${totaal}`;
+  // Sponsor bij totaal optellen
+  const totaalIncSponsor = totaal + sponsorBedrag;
+  totaalEl.textContent = formatEuro(totaalIncSponsor);
 
   // bestelknop enkel actief als naam + klas ingevuld zijn
   controleerBestelKnop();
@@ -321,12 +352,102 @@ emailKoperInput.addEventListener("input", controleerBestelKnop);
 naamKoperInput.addEventListener("input", controleerBestelKnop);
 
 
+// 🔹 SPONSOR-LOGICA
+function updateSponsorUI() {
+  // Vaste knoppen: visueel aanduiden welke actief is
+  sponsorKnoppen.forEach(knop => {
+    const knopBedrag = Number(knop.dataset.bedrag);
+    knop.classList.toggle("actief", sponsorBedrag === knopBedrag);
+  });
+
+  // Bevestigingslijn onder de invoer
+  if (sponsorBedrag > 0) {
+    sponsorBevestigingEl.classList.remove("verborgen");
+    sponsorBevestigingBedragEl.textContent = formatEuro(sponsorBedrag);
+  } else {
+    sponsorBevestigingEl.classList.add("verborgen");
+  }
+
+  // Sponsor in winkelmandje tonen
+  if (sponsorBedrag > 0 && sponsorInMandjeEl) {
+    sponsorInMandjeEl.classList.remove("verborgen");
+    sponsorInMandjeBedragEl.textContent = formatEuro(sponsorBedrag);
+  } else if (sponsorInMandjeEl) {
+    sponsorInMandjeEl.classList.add("verborgen");
+  }
+
+  // Opslaan in localStorage (voor mandje.html)
+  if (sponsorBedrag > 0) {
+    localStorage.setItem("sponsor", String(sponsorBedrag));
+  } else {
+    localStorage.removeItem("sponsor");
+  }
+
+  // Het mandje opnieuw tonen (totaal + leerlinggegevens-zichtbaarheid)
+  renderMandje();
+}
+
+function zetSponsorBedrag(bedrag) {
+  if (bestellingVergrendeld) return;
+  sponsorBedrag = Math.max(0, Number(bedrag) || 0);
+
+  // Als een vast bedrag is geklikt, de "ander bedrag"-invoer leegmaken voor duidelijkheid
+  if (sponsorAnderBedragInput && [5, 10, 20, 50].includes(sponsorBedrag)) {
+    sponsorAnderBedragInput.value = "";
+  }
+
+  updateSponsorUI();
+}
+
+// Vaste knoppen
+sponsorKnoppen.forEach(knop => {
+  knop.addEventListener("click", () => {
+    const bedrag = Number(knop.dataset.bedrag);
+    // Opnieuw klikken op dezelfde knop = uitzetten
+    if (sponsorBedrag === bedrag) {
+      zetSponsorBedrag(0);
+    } else {
+      zetSponsorBedrag(bedrag);
+    }
+  });
+});
+
+// Ander bedrag
+if (sponsorAnderBedragInput) {
+  sponsorAnderBedragInput.addEventListener("input", () => {
+    if (bestellingVergrendeld) return;
+    const n = parseGetal(sponsorAnderBedragInput.value);
+    sponsorBedrag = n;
+    // Vaste knoppen niet markeren wanneer een vrij bedrag wordt ingevuld
+    sponsorKnoppen.forEach(k => k.classList.remove("actief"));
+    updateSponsorUI();
+  });
+}
+
+// Reset-knoppen (ook vanuit mandje)
+if (sponsorResetKnop) {
+  sponsorResetKnop.addEventListener("click", () => {
+    sponsorAnderBedragInput.value = "";
+    zetSponsorBedrag(0);
+  });
+}
+if (sponsorVerwijderenMandjeKnop) {
+  sponsorVerwijderenMandjeKnop.addEventListener("click", () => {
+    if (bestellingVergrendeld) return;
+    if (!confirm("Sponsorbedrag verwijderen?")) return;
+    sponsorAnderBedragInput.value = "";
+    zetSponsorBedrag(0);
+  });
+}
+
+
 // 🔹 KLIK OP BESTELLEN → OPSLAAN (TEST)
 bestelKnop.addEventListener("click", async () => {
   const items = Object.values(mandje);
 
-  if (items.length === 0) {
-    alert("Kies eerst minstens één product.");
+  // Minstens één product OF een sponsorbedrag
+  if (items.length === 0 && sponsorBedrag <= 0) {
+    alert("Kies eerst minstens één product, of vul een sponsorbedrag in.");
     return;
   }
 
@@ -340,8 +461,10 @@ bestelKnop.addEventListener("click", async () => {
     return;
   }
 
+  const productenTotaal = items.reduce((som, item) => som + item.aantal * item.prijs, 0);
+
   const bestelling = {
-    actieId: "kerstverkoop_2026",   // 👈 NIEUW (Optie A)
+    actieId: "kerstverkoop_2026",
     leerling: naamKindInput.value.trim(),
     klas: klasSelect.value,
     naamKoper: naamKoperInput.value.trim(),
@@ -352,7 +475,8 @@ bestelKnop.addEventListener("click", async () => {
       aantal: item.aantal,
       prijs: item.prijs
     })),
-    totaal: items.reduce((som, item) => som + item.aantal * item.prijs, 0),
+    sponsorBedrag: sponsorBedrag,
+    totaal: productenTotaal + sponsorBedrag,
     status: "test",
     aangemaaktOp: new Date()
   };
@@ -408,6 +532,11 @@ nieuweBestellingKnop.addEventListener("click", () => {
   // mandje leeg + UI opnieuw opbouwen
   mandje = {};
 
+  // sponsor resetten
+  sponsorBedrag = 0;
+  if (sponsorAnderBedragInput) sponsorAnderBedragInput.value = "";
+  updateSponsorUI();
+
   // reset alle productkaart-aantallen naar 0 (belangrijk!)
   productControls.forEach(pc => pc.reset());
 
@@ -443,4 +572,17 @@ nieuweBestellingKnop.addEventListener("click", () => {
 document.getElementById("mandjeBtn").addEventListener("click", () => {
   window.location.href = "mandje.html";
 });
+
+// Sponsor laden uit localStorage (voor als iemand refresht)
+const bewaardeSponsor = parseGetal(localStorage.getItem("sponsor"));
+if (bewaardeSponsor > 0) {
+  sponsorBedrag = bewaardeSponsor;
+  // Als het een vast bedrag was, knop actief markeren; anders in 'ander bedrag' veld
+  if ([5, 10, 20, 50].includes(bewaardeSponsor)) {
+    // vaste knoppen worden in updateSponsorUI bijgewerkt
+  } else if (sponsorAnderBedragInput) {
+    sponsorAnderBedragInput.value = bewaardeSponsor.toFixed(2).replace(".", ",");
+  }
+  updateSponsorUI();
+}
 
