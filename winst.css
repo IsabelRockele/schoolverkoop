@@ -280,3 +280,45 @@ td.num, th.num{
   border-radius: 10px;
   vertical-align: middle;
 }
+
+/* Sponsoring-kaart in samenvatting */
+.samenvatting-sponsor {
+  background: #f0f7f2;
+  border-color: #c4dfc9;
+}
+.samenvatting-sponsor .waarde {
+  color: #1a5c3a;
+}
+
+/* Sponsor-regel in resultaatblok (iets ingesprongen + groen) */
+.resultaat-sponsor {
+  color: #1a5c3a;
+  font-size: 12px;
+  padding-left: 12px;
+}
+.resultaat-sponsor span:last-child {
+  color: #1a5c3a;
+  font-weight: 500;
+}
+
+/* Sync-status indicator in header */
+.sync-status {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 10px;
+  transition: opacity 0.3s;
+}
+.sync-status.ok {
+  background: #d8eddd;
+  color: #1a5c3a;
+}
+.sync-status.bezig {
+  background: #e5e7eb;
+  color: #374151;
+}
+.sync-status.fout {
+  background: #fef3c7;
+  color: #92400e;
+}
