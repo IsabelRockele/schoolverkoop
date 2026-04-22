@@ -7,20 +7,46 @@ function bewaarMandje(mandje) {
   localStorage.setItem("mandje", JSON.stringify(mandje));
 }
 
+function laadSponsor() {
+  const n = parseFloat(localStorage.getItem("sponsor") || "0");
+  return isNaN(n) ? 0 : n;
+}
+
+function formatEuro(n) {
+  return "€ " + Number(n || 0).toFixed(2).replace(".", ",");
+}
+
 function render() {
   const mandje = laadMandje();
+  const sponsor = laadSponsor();
   const items = Object.values(mandje);
 
   const lijst = document.getElementById("mandjeLijst");
   const totaalEl = document.getElementById("mandjeTotaal");
+  const sponsorRegel = document.getElementById("sponsorRegel");
+  const sponsorRegelBedrag = document.getElementById("sponsorRegelBedrag");
 
   lijst.innerHTML = "";
   let totaal = 0;
 
-  if (items.length === 0) {
+  // Sponsor-regel tonen/verbergen
+  if (sponsor > 0 && sponsorRegel) {
+    sponsorRegel.classList.remove("verborgen");
+    sponsorRegelBedrag.textContent = formatEuro(sponsor);
+  } else if (sponsorRegel) {
+    sponsorRegel.classList.add("verborgen");
+  }
+
+  // Als echt niks in de bestelling zit (geen producten en geen sponsor)
+  if (items.length === 0 && sponsor === 0) {
     lijst.innerHTML = `<p class="muted">Nog geen producten gekozen.</p>`;
-    totaalEl.textContent = "€ 0";
+    totaalEl.textContent = "€ 0,00";
     return;
+  }
+
+  // Geen producten, enkel sponsor: vriendelijke boodschap
+  if (items.length === 0 && sponsor > 0) {
+    lijst.innerHTML = `<p class="muted">Je bestelling bestaat uit een sponsorbijdrage.</p>`;
   }
 
   items.forEach(item => {
@@ -30,26 +56,25 @@ function render() {
     const sub = (item.aantal || 0) * (item.prijs || 0);
     totaal += sub;
 
-   const subtotaal = item.aantal * item.prijs;
+    const subtotaal = item.aantal * item.prijs;
 
-rij.innerHTML = `
-  <div class="mandje-rij-links">
-    <strong>${item.naam} (${item.variant})</strong>
+    rij.innerHTML = `
+      <div class="mandje-rij-links">
+        <strong>${item.naam} (${item.variant})</strong>
 
-    <div class="mandje-qty">
-      <button class="min">−</button>
-      <span class="val">${item.aantal}</span>
-      <button class="plus">+</button>
-    </div>
+        <div class="mandje-qty">
+          <button class="min">−</button>
+          <span class="val">${item.aantal}</span>
+          <button class="plus">+</button>
+        </div>
 
-    <div class="mandje-subtotaal">
-      € ${subtotaal}
-    </div>
-  </div>
+        <div class="mandje-subtotaal">
+          € ${subtotaal}
+        </div>
+      </div>
 
-  <button class="verwijder" title="Verwijderen">🗑️</button>
-`;
-
+      <button class="verwijder" title="Verwijderen">🗑️</button>
+    `;
 
     const key = item.key;
 
@@ -75,7 +100,8 @@ rij.innerHTML = `
     lijst.appendChild(rij);
   });
 
-  totaalEl.textContent = `€ ${totaal}`;
+  // Totaal = producten + sponsor
+  totaalEl.textContent = formatEuro(totaal + sponsor);
 }
 
 render();
@@ -113,33 +139,37 @@ if (betaalBtn) {
     const emailKoper = document.getElementById("emailKoper").value.trim();
 
     const mandje = JSON.parse(localStorage.getItem("mandje")) || {};
+    const sponsor = laadSponsor();
 
     if (!naamKind || !klas || !naamKoper || !emailKoper) {
       alert("Gelieve alle gegevens in te vullen.");
       return;
     }
 
-    if (Object.keys(mandje).length === 0) {
+    // Minstens één product OF een sponsorbedrag
+    if (Object.keys(mandje).length === 0 && sponsor === 0) {
       alert("Je winkelmandje is leeg.");
       return;
     }
 
-    const totaal = Object.values(mandje)
+    const productenTotaal = Object.values(mandje)
       .reduce((som, item) => som + item.aantal * item.prijs, 0);
 
+    const totaal = productenTotaal + sponsor;
+
     try {
-  await addDoc(collection(db, "bestellingen_test"), {
-  actieId: "kerstverkoop_2026",   // 👈 TOEVOEGEN (Optie A)
-
-  leerling: { naam: naamKind, klas },
-  koper: { naam: naamKoper, email: emailKoper },
-  bestelling: mandje,
-  totaal,
-  aangemaaktOp: serverTimestamp()
-});
-
+      await addDoc(collection(db, "bestellingen_test"), {
+        actieId: "kerstverkoop_2026",
+        leerling: { naam: naamKind, klas },
+        koper: { naam: naamKoper, email: emailKoper },
+        bestelling: mandje,
+        sponsorBedrag: sponsor,
+        totaal,
+        aangemaaktOp: serverTimestamp()
+      });
 
       localStorage.removeItem("mandje");
+      localStorage.removeItem("sponsor");
 
       alert(
         "Bedankt voor je bestelling!\n\n" +
