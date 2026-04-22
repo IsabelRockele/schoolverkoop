@@ -13,7 +13,10 @@
     <button id="terugNaarOverzicht" class="terug-btn">← Terug naar overzicht</button>
     <div class="header-titles">
       <h1>📊 Winstberekening schoolverkoop</h1>
-      <p class="subtitel">Omzet – inkoop – kosten – netto winst (per product zichtbaar)</p>
+      <p class="subtitel">
+        Omzet – inkoop – kosten – netto winst (per product zichtbaar)
+        <span id="syncStatus" class="sync-status"></span>
+      </p>
     </div>
     <button id="downloadWinstPdf" class="compact-btn header-btn">🖨️ PDF</button>
   </div>
@@ -27,6 +30,10 @@
   <div class="samenvatting-blok">
     <span class="label">Aantal bestellingen</span>
     <span class="waarde" id="aantalBestellingen">—</span>
+  </div>
+  <div class="samenvatting-blok samenvatting-sponsor">
+    <span class="label">Totale sponsoring</span>
+    <span class="waarde" id="totaleSponsor">—</span>
   </div>
   <div class="samenvatting-blok">
     <span class="label">Totale Mollie-kosten</span>
@@ -57,6 +64,11 @@
       <div class="resultaat-regel">
         <span>Totale omzet</span>
         <span id="resultaatOmzet">—</span>
+      </div>
+
+      <div class="resultaat-regel resultaat-sponsor">
+        <span>Waarvan sponsoring</span>
+        <span id="resultaatSponsor">—</span>
       </div>
 
       <div class="resultaat-regel">
