@@ -8,7 +8,9 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  doc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 
@@ -31,15 +33,32 @@ function berekenDozenInfo(verkocht, perGroteDoos) {
   return { grote, bestellen, overschot };
 }
 
-// 🔹 Inkoopprijzen (gedeeld met winst.html via localStorage)
+// 🔹 Inkoopprijzen (gedeeld via Firestore, localStorage als cache/fallback)
 // Zelfde key als in winst.js: winst_<actieId>_inkoopprijzen
 const LS_INKOOP_KEY = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
 
+// Synchrone lezer (uit localStorage-cache)
 function leesInkoopMap() {
   try {
     return JSON.parse(localStorage.getItem(LS_INKOOP_KEY) || "{}") || {};
   } catch {
     return {};
+  }
+}
+
+// Ophalen uit Firestore bij opstart en in localStorage cachen
+async function laadInkoopMapVanFirestore() {
+  try {
+    const ref = doc(db, "instellingen", ACTIEVE_ACTIE);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.inkoopprijzen && typeof data.inkoopprijzen === "object") {
+        localStorage.setItem(LS_INKOOP_KEY, JSON.stringify(data.inkoopprijzen));
+      }
+    }
+  } catch (err) {
+    console.warn("Kon inkoopprijzen niet uit Firestore laden:", err);
   }
 }
 
@@ -458,6 +477,17 @@ async function verzamelBestellingenPerKind(klas) {
       prijs: p.prijs
     });
   });
+
+  // ✅ sponsor als speciaal item toevoegen (zonder variant)
+  const sponsor = Number(d.sponsorBedrag || 0);
+  if (sponsor > 0) {
+    resultaat[leerling][koper].push({
+      naam: "Sponsoring",
+      variant: "",
+      aantal: 1,
+      prijs: sponsor
+    });
+  }
 });
 
 
@@ -563,11 +593,12 @@ Object.values(samengevoegd).forEach(item => {
   subtotaalKoper += regelTotaal;
   totaalKind += regelTotaal;
 
-  pdf.text(
-    `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`,
-    marginL + 5,
-    y
-  );
+  // Sponsoring: toon zonder variant en zonder "1 ×"
+  const regelTekst = item.variant
+    ? `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`
+    : `${item.naam}: €${regelTotaal}`;
+
+  pdf.text(regelTekst, marginL + 5, y);
   y += 6.5;
 
   if (y > 270) {
@@ -752,11 +783,12 @@ y += 14;
         subtotaalKoper += regelTotaal;
         totaalKind += regelTotaal;
 
-        pdf.text(
-          `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`,
-          marginL + 5,
-          y
-        );
+        // Sponsoring: toon zonder variant en zonder "1 ×"
+        const regelTekst = item.variant
+          ? `${item.naam} – ${item.variant}: ${item.aantal} × €${item.prijs} = €${regelTotaal}`
+          : `${item.naam}: €${regelTotaal}`;
+
+        pdf.text(regelTekst, marginL + 5, y);
         y += 6.5;
       });
 
@@ -1376,6 +1408,170 @@ async function genereerLeveranciersPdf() {
 
 
 // ============================
+// SPONSORING – laden, tonen, PDF
+// ============================
+let sponsorLijst = []; // { koperNaam, koperEmail, leerling, klas, bedrag, datum }
+
+async function laadSponsoring() {
+  const snapshot = await getDocs(
+    query(
+      collection(db, "bestellingen_test"),
+      where("actieId", "==", ACTIEVE_ACTIE)
+    )
+  );
+
+  sponsorLijst = [];
+
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    const bedrag = Number(d.sponsorBedrag || 0);
+    if (bedrag <= 0) return;
+
+    sponsorLijst.push({
+      koperNaam: d.koper?.naam || "Onbekend",
+      koperEmail: d.koper?.email || "",
+      leerling: d.leerling?.naam || "",
+      klas: d.leerling?.klas || "",
+      bedrag
+    });
+  });
+
+  // Alfabetisch op koper sorteren
+  sponsorLijst.sort((a, b) =>
+    a.koperNaam.localeCompare(b.koperNaam, "nl")
+  );
+
+  renderSponsoring();
+}
+
+function renderSponsoring() {
+  const tbody = document.getElementById("tabelSponsoring");
+  const totaalBedragEl = document.getElementById("sponsorTotaalBedrag");
+  const aantalEl = document.getElementById("sponsorAantal");
+  const metaSp = document.getElementById("tabMetaSponsoring");
+
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  let totaal = 0;
+
+  if (sponsorLijst.length === 0) {
+    tbody.innerHTML =
+      `<tr><td colspan="5" class="muted">Nog geen sponsorbijdragen</td></tr>`;
+    if (totaalBedragEl) totaalBedragEl.textContent = euro(0);
+    if (aantalEl) aantalEl.textContent = "";
+    if (metaSp) metaSp.textContent = "geen";
+    return;
+  }
+
+  sponsorLijst.forEach(s => {
+    totaal += s.bedrag;
+    const leerlingLabel = s.leerling
+      ? `${s.leerling} (${s.klas})`
+      : `(${s.klas})`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${s.koperNaam}</td>
+      <td>${s.koperEmail}</td>
+      <td>${s.leerling}</td>
+      <td>${s.klas}</td>
+      <td class="num">${euro(s.bedrag)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (totaalBedragEl) totaalBedragEl.textContent = euro(totaal);
+  if (aantalEl) aantalEl.textContent =
+    `(${sponsorLijst.length} ${sponsorLijst.length === 1 ? "bijdrage" : "bijdragen"})`;
+  if (metaSp) metaSp.textContent = `${sponsorLijst.length} · ${euro(totaal)}`;
+}
+
+async function genereerPdfSponsoring() {
+  if (sponsorLijst.length === 0) {
+    alert("Er zijn nog geen sponsorbijdragen.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let y = await _tekenKopEnVoet(pdf, "Overzicht sponsoring");
+
+  const x = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+  const w = pageW - x * 2;
+
+  y = _tekenKaderTitel(pdf, x, y, w, "Sponsorbijdragen");
+
+  // Kolom-x-posities
+  const xKoper = x + 5;
+  const xLeerling = x + 75;
+  const xKlas = x + 135;
+  const xBedrag = x + w - 5;
+
+  // Kolomkoppen
+  pdf.setFont(undefined, "bold");
+  pdf.setFontSize(11);
+  pdf.text("Koper", xKoper, y);
+  pdf.text("Via leerling", xLeerling, y);
+  pdf.text("Klas", xKlas, y);
+  pdf.text("Bedrag", xBedrag, y, { align: "right" });
+  y += 3;
+  pdf.setDrawColor(210);
+  pdf.line(x, y, x + w, y);
+  y += 6;
+  pdf.setFont(undefined, "normal");
+
+  let totaal = 0;
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  sponsorLijst.forEach(s => {
+    if (y > pageH - 25) {
+      pdf.addPage();
+      y = 25;
+    }
+    totaal += s.bedrag;
+
+    const koperTekst = s.koperNaam.length > 30
+      ? s.koperNaam.slice(0, 29) + "…"
+      : s.koperNaam;
+    const leerlingTekst = (s.leerling || "").length > 22
+      ? s.leerling.slice(0, 21) + "…"
+      : (s.leerling || "");
+
+    pdf.text(koperTekst, xKoper, y);
+    pdf.text(leerlingTekst, xLeerling, y);
+    pdf.text(s.klas || "", xKlas, y);
+    pdf.text(euro(s.bedrag), xBedrag, y, { align: "right" });
+    y += 6.5;
+  });
+
+  // Totaalrij
+  y += 2;
+  pdf.setDrawColor(180);
+  pdf.line(x, y - 3, x + w, y - 3);
+  pdf.setFont(undefined, "bold");
+  pdf.text(`Totaal (${sponsorLijst.length} bijdragen)`, xKoper, y + 2);
+  pdf.text(euro(totaal), xBedrag, y + 2, { align: "right" });
+  y += 10;
+
+  // Groene factuurbalk-achtige regel
+  pdf.setFillColor(230, 240, 234);
+  pdf.setDrawColor(45, 125, 78);
+  pdf.setLineWidth(0.6);
+  pdf.rect(x, y, w, 11, "F");
+  pdf.line(x, y, x + w, y);
+  pdf.setLineWidth(0.2);
+  pdf.setTextColor(26, 92, 58);
+  pdf.setFontSize(12);
+  pdf.text("Totale sponsorbijdrage", x + 5, y + 7.5);
+  pdf.text(euro(totaal), x + w - 5, y + 7.5, { align: "right" });
+  pdf.setTextColor(0, 0, 0);
+
+  pdf.save("sponsoring.pdf");
+}
+
+// ============================
 // TABBLADEN (compacte knoppenbalk)
 // ============================
 function activeerTab(tabNaam) {
@@ -1439,13 +1635,18 @@ function updateTabMetas() {
 // ============================
 bindTabKnoppen();
 
-// Data laden; daarna meta-labels bijwerken
-laadTotaalPerProduct().then(updateTabMetas);
+// Eerst Firestore-inkoopprijzen cachen, dán renderen (zodat prijzen meteen juist zijn)
+laadInkoopMapVanFirestore()
+  .then(() => laadTotaalPerProduct())
+  .then(updateTabMetas);
+laadSponsoring();
 
 // Automatisch bijwerken als iemand terugkomt van de winstpagina
-// (dan kunnen de inkoopprijzen gewijzigd zijn)
 window.addEventListener("focus", () => {
-  laadTotaalPerProduct().then(updateTabMetas);
+  laadInkoopMapVanFirestore()
+    .then(() => laadTotaalPerProduct())
+    .then(updateTabMetas);
+  laadSponsoring();
 });
 
 const winstBtn = document.getElementById("openWinstBerekening");
@@ -1454,4 +1655,9 @@ if (winstBtn) {
   winstBtn.addEventListener("click", () => {
     window.location.href = "winst.html";
   });
+}
+
+const sponsorPdfBtn = document.getElementById("downloadPdfSponsoring");
+if (sponsorPdfBtn) {
+  sponsorPdfBtn.addEventListener("click", genereerPdfSponsoring);
 }
