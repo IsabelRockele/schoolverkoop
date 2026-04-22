@@ -25,6 +25,10 @@
         <span class="tab-knop-label">Truffels</span>
         <span class="tab-knop-meta" id="tabMetaTruffels"></span>
       </button>
+      <button class="tab-knop" role="tab" data-tab="sponsoring" aria-selected="false">
+        <span class="tab-knop-label">Sponsoring</span>
+        <span class="tab-knop-meta" id="tabMetaSponsoring"></span>
+      </button>
       <button class="tab-knop" role="tab" data-tab="klas" aria-selected="false">
         <span class="tab-knop-label">Totaal per klas</span>
       </button>
@@ -119,6 +123,34 @@
           <span>Te betalen aan leverancier truffels (250 g + 500 g)</span>
           <strong id="truffelsFactuurBedrag">€ 0,00</strong>
         </div>
+      </section>
+
+      <!-- TAB: SPONSORING -->
+      <section class="tab-panel" data-panel="sponsoring" hidden>
+        <div class="tab-panel-header">
+          <h2>Sponsoring</h2>
+          <button id="downloadPdfSponsoring" class="btn-pdf">
+            Download PDF – Sponsoring
+          </button>
+        </div>
+
+        <p class="sponsor-totaal-balk" id="sponsorTotaalBalk">
+          Totale sponsorbijdragen: <strong id="sponsorTotaalBedrag">€ 0,00</strong>
+          <span class="sponsor-aantal" id="sponsorAantal"></span>
+        </p>
+
+        <table class="overzicht-tabel">
+          <thead>
+            <tr>
+              <th>Koper</th>
+              <th>E-mail</th>
+              <th>Via leerling</th>
+              <th>Klas</th>
+              <th class="num">Bedrag</th>
+            </tr>
+          </thead>
+          <tbody id="tabelSponsoring"></tbody>
+        </table>
       </section>
 
       <!-- TAB: TOTAAL PER KLAS -->
