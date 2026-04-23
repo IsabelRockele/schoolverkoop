@@ -1385,6 +1385,16 @@ async function genereerPdfKerstrozen() {
   const w = pageW - x * 2;
 
   y = _tekenKaderTitel(pdf, x, y, w, "Kerstrozen");
+
+  // Extra info voor de leverancier: welke grootte kerstrozen
+  pdf.setFont(undefined, "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(90, 90, 90);
+  pdf.text("Pot \u2300 10,5 cm (min. 5 bloemen)", x, y);
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(11);
+  y += 7;
+
   const res = _tekenKerstrozenTabel(pdf, x, y, w, leveranciersData.Kerstrozen, inkoopMap);
   y = res.y + 6;
 
