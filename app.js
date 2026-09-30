@@ -2,7 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import {
   getFirestore,
   collection,
-  addDoc
+  addDoc,
+  doc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // 🔹 Firebase configuratie
@@ -57,6 +59,19 @@ const productenData = [
     ]
   }
 ];
+
+try {
+  const instellingenSnap = await getDoc(doc(db, "publieke_instellingen", "kerstverkoop_2026"));
+  if (instellingenSnap.exists()) {
+    const prijzen = instellingenSnap.data().verkoopprijzen || {};
+    productenData.forEach(product => {
+      const nieuwePrijs = Number(prijzen[product.id]);
+      if (Number.isFinite(nieuwePrijs) && nieuwePrijs > 0) product.prijs = nieuwePrijs;
+    });
+  }
+} catch (error) {
+  console.warn("De ingestelde verkoopprijzen konden niet worden geladen; standaardprijzen worden gebruikt.", error);
+}
 
 // 🔹 DOM
 const productenEl = document.getElementById("producten");

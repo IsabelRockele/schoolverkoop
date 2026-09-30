@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isBeheerder() {
+      return request.auth != null;
+    }
+
+    match /producten/{document} {
+      allow read: if true;
+      allow write: if isBeheerder();
+    }
+
+    match /publieke_instellingen/{document} {
+      allow read: if true;
+      allow write: if isBeheerder();
+    }
+
+    match /bestellingen_test/{document} {
+      allow read, update, delete: if isBeheerder();
+      allow create: if
+        request.resource.data.keys().hasAll([
+          'actieId', 'leerling', 'klas', 'naamKoper', 'emailKoper',
+          'producten', 'sponsorBedrag', 'totaal', 'status', 'aangemaaktOp'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'actieId', 'leerling', 'klas', 'naamKoper', 'emailKoper',
+          'producten', 'sponsorBedrag', 'totaal', 'status', 'aangemaaktOp'
+        ]) &&
+        request.resource.data.actieId == 'kerstverkoop_2026' &&
+        request.resource.data.leerling is string &&
+        request.resource.data.leerling.size() >= 1 &&
+        request.resource.data.leerling.size() <= 120 &&
+        request.resource.data.klas is string &&
+        request.resource.data.klas.size() >= 1 &&
+        request.resource.data.klas.size() <= 80 &&
+        request.resource.data.naamKoper is string &&
+        request.resource.data.naamKoper.size() >= 1 &&
+        request.resource.data.naamKoper.size() <= 120 &&
+        request.resource.data.emailKoper is string &&
+        request.resource.data.emailKoper.size() >= 3 &&
+        request.resource.data.emailKoper.size() <= 254 &&
+        request.resource.data.producten is list &&
+        request.resource.data.producten.size() <= 30 &&
+        request.resource.data.sponsorBedrag is number &&
+        request.resource.data.sponsorBedrag >= 0 &&
+        request.resource.data.sponsorBedrag <= 1000 &&
+        request.resource.data.totaal is number &&
+        request.resource.data.totaal > 0 &&
+        request.resource.data.totaal <= 5000 &&
+        request.resource.data.status == 'test' &&
+        request.resource.data.aangemaaktOp is timestamp;
+    }
+
+    match /instellingen/{document} {
+      allow read, write: if isBeheerder();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

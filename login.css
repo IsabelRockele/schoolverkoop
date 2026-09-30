@@ -1,0 +1,16 @@
+:root { font-family: Arial, sans-serif; color: #24332a; background: #f4f7f5; }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; }
+.login-kaart { width: min(100%, 430px); background: white; border: 1px solid #d7e1da; border-radius: 16px; padding: 30px; box-shadow: 0 12px 35px rgba(28, 62, 40, .1); }
+.login-logo { display: block; width: 88px; max-height: 88px; object-fit: contain; margin: 0 auto 12px; }
+h1 { margin: 0; text-align: center; color: #1f6a3e; font-size: 26px; }
+.uitleg { text-align: center; color: #657169; margin: 8px 0 26px; }
+label { display: block; font-weight: 700; margin: 15px 0 6px; }
+input { width: 100%; border: 1px solid #aebcb2; border-radius: 8px; padding: 12px; font: inherit; }
+input:focus { outline: 3px solid #cfe8d7; border-color: #287647; }
+button[type="submit"] { width: 100%; margin-top: 20px; border: 0; border-radius: 8px; padding: 13px; background: #287647; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+button:disabled { opacity: .65; cursor: wait; }
+.melding { min-height: 22px; color: #24623d; font-size: 14px; line-height: 1.4; }
+.melding.fout { color: #a12626; }
+.linkknop { display: block; margin: 5px auto 22px; border: 0; background: transparent; color: #1f6a3e; text-decoration: underline; cursor: pointer; font: inherit; }
+.teruglink { display: block; text-align: center; color: #59645d; }

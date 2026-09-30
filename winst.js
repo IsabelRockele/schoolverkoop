@@ -1,8 +1,11 @@
+import { requireAdmin } from "./auth-guard.js";
+await requireAdmin();
+
 // ===============================
 // WINST.JS – PER PRODUCT + PDF
 // ===============================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -24,7 +27,7 @@ const firebaseConfig = {
   appId: "1:74076660432:web:2e94c19700a076458cb4d5"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApp();
 const db = getFirestore(app);
 
 // 🔹 Actieve verkoopactie
@@ -344,7 +347,9 @@ productenLijst.forEach(p => {
       totaleOmzet += Number(data.totaal || 0);
       totaleSponsor += Number(data.sponsorBedrag || 0);
 
-      const items = Object.values(data.bestelling || {});
+      const items = Array.isArray(data.producten)
+        ? data.producten
+        : Object.values(data.bestelling || {});
       items.forEach(item => {
         const naam = (item.naam || "").toString();
         const variant = (item.variant || "").toString();

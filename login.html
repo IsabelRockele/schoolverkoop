@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aanmelden – Beheer schoolverkoop</title>
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+  <main class="login-kaart">
+    <img src="afbeeldingen/schoollogo.png" alt="Logo van de school" class="login-logo" />
+    <h1>Beheer schoolverkoop</h1>
+    <p class="uitleg">Alleen voor de beheerder en het secretariaat.</p>
+
+    <form id="loginForm">
+      <label for="email">E-mailadres</label>
+      <input id="email" type="email" autocomplete="username" required />
+
+      <label for="wachtwoord">Wachtwoord</label>
+      <input id="wachtwoord" type="password" autocomplete="current-password" required />
+
+      <button type="submit" id="loginKnop">Aanmelden</button>
+      <p id="melding" class="melding" role="alert" aria-live="polite"></p>
+    </form>
+
+    <button type="button" id="vergetenKnop" class="linkknop">Wachtwoord vergeten?</button>
+    <a href="index.html" class="teruglink">← Terug naar de bestelpagina</a>
+  </main>
+  <script type="module" src="login.js"></script>
+</body>
+</html>

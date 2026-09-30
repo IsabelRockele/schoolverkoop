@@ -1,8 +1,28 @@
+import { requireAdmin } from "./auth-guard.js";
+await requireAdmin();
+
 function haalProductenUitBestelling(data) {
+  if (Array.isArray(data.producten)) return data.producten;
   return Object.values(data.bestelling || {});
 }
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+function leerlingNaam(data) {
+  return typeof data.leerling === "string" ? data.leerling : (data.leerling?.naam || "");
+}
+
+function leerlingKlas(data) {
+  return data.klas || data.leerling?.klas || "";
+}
+
+function koperNaam(data) {
+  return data.naamKoper || data.koper?.naam || "";
+}
+
+function koperEmail(data) {
+  return data.emailKoper || data.koper?.email || "";
+}
+
+import { getApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -10,7 +30,8 @@ import {
   query,
   where,
   doc,
-  getDoc
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 
@@ -97,7 +118,7 @@ const firebaseConfig = {
 };
 
 // 🔹 Firebase starten
-const app = initializeApp(firebaseConfig);
+const app = getApp();
 const db = getFirestore(app);
 
 // 🔹 DOM
@@ -109,6 +130,52 @@ const tabelKlas = document.querySelector("#totaalPerKlas tbody");
 const downloadPdfBtn = document.getElementById("downloadPdfKlas");
 const downloadLeveranciersPdf = document.getElementById("downloadLeveranciersPdf");
 const downloadPdfPerKind = document.getElementById("downloadPdfPerKind");
+
+function parsePrijs(waarde) {
+  return Number(String(waarde || "").replace(",", ".").trim());
+}
+
+function toonPrijs(input, waarde) {
+  input.value = Number(waarde).toFixed(2).replace(".", ",");
+}
+
+async function laadVerkoopprijzen() {
+  const standaard = { truffel250: 6, truffel500: 12, kerstrozen: 4 };
+  try {
+    const snap = await getDoc(doc(db, "publieke_instellingen", ACTIEVE_ACTIE));
+    const prijzen = snap.exists() ? (snap.data().verkoopprijzen || {}) : {};
+    toonPrijs(document.getElementById("prijsTruffel250"), prijzen.truffel250 || standaard.truffel250);
+    toonPrijs(document.getElementById("prijsTruffel500"), prijzen.truffel500 || standaard.truffel500);
+    toonPrijs(document.getElementById("prijsKerstrozen"), prijzen.kerstrozen || standaard.kerstrozen);
+  } catch (error) {
+    document.getElementById("prijsStatus").textContent = "Prijzen konden niet worden geladen.";
+    console.error(error);
+  }
+}
+
+document.getElementById("verkoopprijzenForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const status = document.getElementById("prijsStatus");
+  const verkoopprijzen = {
+    truffel250: parsePrijs(document.getElementById("prijsTruffel250").value),
+    truffel500: parsePrijs(document.getElementById("prijsTruffel500").value),
+    kerstrozen: parsePrijs(document.getElementById("prijsKerstrozen").value)
+  };
+  if (Object.values(verkoopprijzen).some(prijs => !Number.isFinite(prijs) || prijs <= 0 || prijs > 1000)) {
+    status.textContent = "Vul voor elk product een geldige prijs groter dan € 0 in.";
+    return;
+  }
+  status.textContent = "Bezig met opslaan…";
+  try {
+    await setDoc(doc(db, "publieke_instellingen", ACTIEVE_ACTIE), { verkoopprijzen, aangepastOp: new Date() }, { merge: true });
+    status.textContent = "✓ Prijzen opgeslagen. Nieuwe bezoekers zien deze prijzen meteen.";
+  } catch (error) {
+    status.textContent = "Opslaan is niet gelukt. Probeer opnieuw.";
+    console.error(error);
+  }
+});
+
+laadVerkoopprijzen();
 
 
 // 🔹 Leveranciers-data (wordt gevuld door laadTotaalPerProduct)
@@ -404,7 +471,7 @@ async function laadTotaalPerKlas(klas) {
 
   snapshot.forEach(doc => {
   const data = doc.data();
-  if (data.leerling?.klas !== klas) return;
+  if (leerlingKlas(data) !== klas) return;
 
   const producten = haalProductenUitBestelling(data);
 
@@ -457,11 +524,11 @@ async function verzamelBestellingenPerKind(klas) {
   const d = doc.data();
 
   // ✅ juiste klas controleren
-  if (d.leerling?.klas !== klas) return;
+  if (leerlingKlas(d) !== klas) return;
 
   // ✅ juiste namen ophalen
-  const leerling = d.leerling?.naam || "Onbekend";
-  const koper = d.koper?.naam || "Onbekend";
+  const leerling = leerlingNaam(d) || "Onbekend";
+  const koper = koperNaam(d) || "Onbekend";
 
   if (!resultaat[leerling]) resultaat[leerling] = {};
   if (!resultaat[leerling][koper]) resultaat[leerling][koper] = [];
@@ -845,10 +912,10 @@ async function genereerPdfPerKlas(klas) {
   const d = doc.data();
 
   // ✅ juiste klas filteren
-  if (d.leerling?.klas !== klas) return;
+  if (leerlingKlas(d) !== klas) return;
 
   // ✅ leerlingnaam ophalen
-  const leerling = d.leerling?.naam || "Onbekend";
+  const leerling = leerlingNaam(d) || "Onbekend";
   leerlingenSet.add(leerling);
   if (!matrix[leerling]) matrix[leerling] = {};
 
@@ -1438,10 +1505,10 @@ async function laadSponsoring() {
     if (bedrag <= 0) return;
 
     sponsorLijst.push({
-      koperNaam: d.koper?.naam || "Onbekend",
-      koperEmail: d.koper?.email || "",
-      leerling: d.leerling?.naam || "",
-      klas: d.leerling?.klas || "",
+      koperNaam: koperNaam(d) || "Onbekend",
+      koperEmail: koperEmail(d),
+      leerling: leerlingNaam(d),
+      klas: leerlingKlas(d),
       bedrag
     });
   });

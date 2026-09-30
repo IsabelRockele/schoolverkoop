@@ -1,0 +1,28 @@
+html.auth-controleren body { visibility: hidden; }
+
+.beheerbalk {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 8px 18px;
+  background: #173e29;
+  color: #fff;
+  font: 13px/1.4 Arial, sans-serif;
+}
+
+.beheer-afmelden {
+  border: 1px solid rgba(255,255,255,.65);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.beheer-afmelden:hover { background: rgba(255,255,255,.12); }
+
+@media (max-width: 600px) {
+  .beheerbalk { justify-content: space-between; }
+  .beheer-email { display: block; max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+}
