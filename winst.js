@@ -206,6 +206,13 @@ function leverancierVanItem(naamLower) {
 async function loadInstellingen() {
   const fsData = await leesInstellingenUitFirestore();
 
+  let lokaleInkoop = {};
+  try {
+    lokaleInkoop = JSON.parse(localStorage.getItem(LS_INKOOP) || "{}") || {};
+  } catch {
+    lokaleInkoop = {};
+  }
+
   if (fsData) {
     // Uit Firestore
     if (typeof fsData.mollieKost !== "undefined") {
@@ -218,6 +225,9 @@ async function loadInstellingen() {
     }
     if (fsData.inkoopprijzen && typeof fsData.inkoopprijzen === "object") {
       inkoopMap = { ...fsData.inkoopprijzen };
+    } else {
+      // Een instellingenrecord zonder prijzen mag de bestaande lokale prijzen niet wissen.
+      inkoopMap = lokaleInkoop;
     }
     // Ook naar localStorage schrijven als offline-backup
     saveLocalSettings();
@@ -238,11 +248,7 @@ async function loadInstellingen() {
     }
   } catch {}
 
-  try {
-    inkoopMap = JSON.parse(localStorage.getItem(LS_INKOOP) || "{}") || {};
-  } catch {
-    inkoopMap = {};
-  }
+  inkoopMap = lokaleInkoop;
 }
 
 function saveLocalSettings() {

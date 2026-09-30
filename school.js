@@ -632,6 +632,8 @@ async function laadBeschikbareKlassen() {
         klasFilter.appendChild(optie);
       }
       optie.textContent = `${klas} (${aantal} testbestelling${aantal === 1 ? "" : "en"})`;
+      // Bij opties zonder value-attribuut verandert textContent anders ook de waarde.
+      optie.value = klas;
     });
 
     if (aantallen.size === 1 && !klasFilter.value) {
