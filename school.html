@@ -222,6 +222,27 @@
           <button type="submit" class="btn">Prijzen opslaan</button>
           <p id="prijsStatus" class="prijs-status" aria-live="polite"></p>
         </form>
+
+        <hr class="instellingen-scheiding" />
+        <h3>Verkoopperiode en QR-code</h3>
+        <form id="verkoopperiodeForm" class="prijsbeheer-form">
+          <label for="startOp">Bestellen mogelijk vanaf</label>
+          <input id="startOp" type="datetime-local" required />
+          <label for="eindOp">Bestellen mogelijk tot en met</label>
+          <input id="eindOp" type="datetime-local" required />
+          <label for="afgeslotenTekst">Tekst na afsluiting</label>
+          <input id="afgeslotenTekst" type="text" maxlength="180" value="Bedankt voor jullie steun! De verkoop is ondertussen afgerond." required />
+          <button type="submit" class="btn">Verkoopperiode opslaan</button>
+          <p id="periodeStatus" class="prijs-status" aria-live="polite"></p>
+        </form>
+
+        <div class="qr-beheer">
+          <h3>QR-code voor ouders</h3>
+          <p>Deze QR blijft dezelfde, ook wanneer je later de einddatum wijzigt.</p>
+          <div id="qrCode" class="qr-code" aria-label="QR-code naar de bestelpagina"></div>
+          <p class="qr-link" id="qrLink"></p>
+          <button type="button" id="downloadQr" class="btn secondary">QR-code met schoollogo downloaden</button>
+        </div>
       </section>
 
     </div>
@@ -230,8 +251,9 @@
 
   <!-- ✅ jsPDF UMD: MOET EERST -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- ✅ DAN pas onze module -->
-  <script type="module" src="school.js"></script>
+  <script type="module" src="school.js?v=20260930-2"></script>
 </body>
 </html>

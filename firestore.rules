@@ -18,6 +18,11 @@ service cloud.firestore {
     match /bestellingen_test/{document} {
       allow read, update, delete: if isBeheerder();
       allow create: if
+        (!exists(/databases/$(database)/documents/publieke_instellingen/kerstverkoop_2026) ||
+          ((!get(/databases/$(database)/documents/publieke_instellingen/kerstverkoop_2026).data.keys().hasAny(['startOp']) ||
+            request.time >= get(/databases/$(database)/documents/publieke_instellingen/kerstverkoop_2026).data.startOp) &&
+           (!get(/databases/$(database)/documents/publieke_instellingen/kerstverkoop_2026).data.keys().hasAny(['eindOp']) ||
+            request.time <= get(/databases/$(database)/documents/publieke_instellingen/kerstverkoop_2026).data.eindOp))) &&
         request.resource.data.keys().hasAll([
           'actieId', 'leerling', 'klas', 'naamKoper', 'emailKoper',
           'producten', 'sponsorBedrag', 'totaal', 'status', 'aangemaaktOp'

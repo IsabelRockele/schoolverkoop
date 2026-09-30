@@ -1534,6 +1534,16 @@ button {
 .prijsbeheer-form input { width: 100%; padding: 10px; border: 1px solid #b8c4bc; border-radius: 7px; font: inherit; }
 .prijsbeheer-form .btn, .prijs-status { grid-column: 1 / -1; }
 .prijs-status { min-height: 22px; margin: 0; color: #1a5c3a; }
+.instellingen-scheiding { margin: 32px 0; border: 0; border-top: 1px solid #d8e1da; }
+.qr-beheer { margin-top: 34px; padding: 20px; border: 1px solid #d8e1da; border-radius: 12px; background: #f8fbf9; max-width: 600px; }
+.qr-code { width: 304px; max-width: 100%; padding: 12px; background: white; border-radius: 10px; margin: 16px 0; }
+.qr-code canvas, .qr-code img { width: 100% !important; height: auto !important; display: block; }
+.qr-link { overflow-wrap: anywhere; color: #526057; font-size: 13px; }
+.verkoop-niet-actief { display: none !important; }
+.verkoopmelding { width: min(92%, 600px); margin: 50px auto; padding: 36px; text-align: center; background: white; border: 1px solid #d4e0d7; border-radius: 16px; box-shadow: 0 10px 30px rgba(30,70,42,.08); }
+.verkoopmelding img { width: 110px; max-height: 110px; object-fit: contain; }
+.verkoopmelding h2 { color: #1f6a3e; font-size: 28px; }
+.verkoopmelding p { font-size: 17px; line-height: 1.6; }
 @media (max-width: 560px) {
   .prijsbeheer-form { grid-template-columns: 1fr; }
   .prijsbeheer-form .btn, .prijs-status { grid-column: 1; }

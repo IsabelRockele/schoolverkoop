@@ -139,14 +139,25 @@ function toonPrijs(input, waarde) {
   input.value = Number(waarde).toFixed(2).replace(".", ",");
 }
 
+function naarLokaleDatumInput(timestamp) {
+  const datum = timestamp?.toDate?.();
+  if (!datum) return "";
+  const lokaal = new Date(datum.getTime() - datum.getTimezoneOffset() * 60000);
+  return lokaal.toISOString().slice(0, 16);
+}
+
 async function laadVerkoopprijzen() {
   const standaard = { truffel250: 6, truffel500: 12, kerstrozen: 4 };
   try {
     const snap = await getDoc(doc(db, "publieke_instellingen", ACTIEVE_ACTIE));
-    const prijzen = snap.exists() ? (snap.data().verkoopprijzen || {}) : {};
+    const data = snap.exists() ? snap.data() : {};
+    const prijzen = data.verkoopprijzen || {};
     toonPrijs(document.getElementById("prijsTruffel250"), prijzen.truffel250 || standaard.truffel250);
     toonPrijs(document.getElementById("prijsTruffel500"), prijzen.truffel500 || standaard.truffel500);
     toonPrijs(document.getElementById("prijsKerstrozen"), prijzen.kerstrozen || standaard.kerstrozen);
+    document.getElementById("startOp").value = naarLokaleDatumInput(data.startOp);
+    document.getElementById("eindOp").value = naarLokaleDatumInput(data.eindOp);
+    if (data.afgeslotenTekst) document.getElementById("afgeslotenTekst").value = data.afgeslotenTekst;
   } catch (error) {
     document.getElementById("prijsStatus").textContent = "Prijzen konden niet worden geladen.";
     console.error(error);
@@ -176,6 +187,69 @@ document.getElementById("verkoopprijzenForm").addEventListener("submit", async e
 });
 
 laadVerkoopprijzen();
+
+document.getElementById("verkoopperiodeForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const status = document.getElementById("periodeStatus");
+  const startOp = new Date(document.getElementById("startOp").value);
+  const eindOp = new Date(document.getElementById("eindOp").value);
+  if (!Number.isFinite(startOp.getTime()) || !Number.isFinite(eindOp.getTime()) || eindOp <= startOp) {
+    status.textContent = "De einddatum moet na de begindatum liggen.";
+    return;
+  }
+  status.textContent = "Bezig met opslaan…";
+  try {
+    await setDoc(doc(db, "publieke_instellingen", ACTIEVE_ACTIE), {
+      startOp,
+      eindOp,
+      afgeslotenTekst: document.getElementById("afgeslotenTekst").value.trim(),
+      aangepastOp: new Date()
+    }, { merge: true });
+    status.textContent = "✓ Verkoopperiode opgeslagen. Openen en afsluiten gebeurt automatisch.";
+  } catch (error) {
+    status.textContent = "Opslaan is niet gelukt. Probeer opnieuw.";
+    console.error(error);
+  }
+});
+
+function maakQrCode() {
+  const verkoopUrl = new URL("index.html", location.href).href;
+  document.getElementById("qrLink").textContent = verkoopUrl;
+  const houder = document.getElementById("qrCode");
+  houder.innerHTML = "";
+  new QRCode(houder, {
+    text: verkoopUrl,
+    width: 280,
+    height: 280,
+    correctLevel: QRCode.CorrectLevel.H,
+    colorDark: "#173e29",
+    colorLight: "#ffffff"
+  });
+  setTimeout(() => {
+    const canvas = houder.querySelector("canvas");
+    const logo = new Image();
+    logo.onload = () => {
+      const ctx = canvas.getContext("2d");
+      const grootte = 58;
+      const x = (canvas.width - grootte) / 2;
+      const y = (canvas.height - grootte) / 2;
+      ctx.fillStyle = "white";
+      ctx.fillRect(x - 6, y - 6, grootte + 12, grootte + 12);
+      ctx.drawImage(logo, x, y, grootte, grootte);
+    };
+    logo.src = "afbeeldingen/schoollogo.png";
+  }, 50);
+}
+
+maakQrCode();
+document.getElementById("downloadQr").addEventListener("click", () => {
+  const canvas = document.querySelector("#qrCode canvas");
+  if (!canvas) return;
+  const link = document.createElement("a");
+  link.download = "QR-schoolverkoop-De-Linde.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+});
 
 
 // 🔹 Leveranciers-data (wordt gevuld door laadTotaalPerProduct)

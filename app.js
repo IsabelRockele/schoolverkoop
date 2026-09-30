@@ -60,10 +60,12 @@ const productenData = [
   }
 ];
 
+let publiekeInstellingen = {};
 try {
   const instellingenSnap = await getDoc(doc(db, "publieke_instellingen", "kerstverkoop_2026"));
   if (instellingenSnap.exists()) {
-    const prijzen = instellingenSnap.data().verkoopprijzen || {};
+    publiekeInstellingen = instellingenSnap.data();
+    const prijzen = publiekeInstellingen.verkoopprijzen || {};
     productenData.forEach(product => {
       const nieuwePrijs = Number(prijzen[product.id]);
       if (Number.isFinite(nieuwePrijs) && nieuwePrijs > 0) product.prijs = nieuwePrijs;
@@ -87,6 +89,27 @@ const naamKoperInput = document.getElementById("naamKoper");
 const emailKoperInput = document.getElementById("emailKoper");
 const bestelKnop = document.getElementById("bestelKnop");
 const nieuweBestellingKnop = document.getElementById("nieuweBestellingKnop");
+
+const nu = new Date();
+const startOp = publiekeInstellingen.startOp?.toDate?.();
+const eindOp = publiekeInstellingen.eindOp?.toDate?.();
+const nogNietOpen = startOp && nu < startOp;
+const afgelopen = eindOp && nu > eindOp;
+if (nogNietOpen || afgelopen) {
+  document.querySelector("main.layout").classList.add("verkoop-niet-actief");
+  document.getElementById("mandjeBtn").classList.add("verborgen");
+  const bericht = document.createElement("section");
+  bericht.className = "verkoopmelding";
+  bericht.innerHTML = `
+    <img src="afbeeldingen/schoollogo.png" alt="Schoollogo" />
+    <h2>${afgelopen ? "De verkoop is afgerond" : "De verkoop is nog niet gestart"}</h2>
+    <p></p>
+  `;
+  bericht.querySelector("p").textContent = afgelopen
+    ? (publiekeInstellingen.afgeslotenTekst || "Bedankt voor jullie steun! De verkoop is ondertussen afgerond.")
+    : `Bestellen kan vanaf ${startOp.toLocaleString("nl-BE", { dateStyle: "long", timeStyle: "short" })}.`;
+  document.querySelector("header.top").after(bericht);
+}
 
 // Sponsor-elementen
 const sponsorKnoppen = document.querySelectorAll(".sponsor-knop");
