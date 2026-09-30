@@ -31,7 +31,8 @@ import {
   where,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 
@@ -249,6 +250,41 @@ document.getElementById("downloadQr").addEventListener("click", () => {
   link.download = "QR-schoolverkoop-De-Linde.png";
   link.href = canvas.toDataURL("image/png");
   link.click();
+});
+
+document.getElementById("wisTestbestellingen").addEventListener("click", async () => {
+  const status = document.getElementById("wisStatus");
+  if (!confirm("Alle TESTbestellingen definitief verwijderen? Echte bestellingen worden niet geraakt.")) return;
+
+  const controle = prompt("Typ WISSEN om te bevestigen.");
+  if (controle !== "WISSEN") {
+    status.textContent = "Wissen geannuleerd: de bevestiging was niet exact WISSEN.";
+    return;
+  }
+
+  const knop = document.getElementById("wisTestbestellingen");
+  knop.disabled = true;
+  status.textContent = "Testbestellingen worden verwijderd…";
+  try {
+    const snapshot = await getDocs(collection(db, "bestellingen_test"));
+    const documenten = snapshot.docs;
+    for (let start = 0; start < documenten.length; start += 400) {
+      const batch = writeBatch(db);
+      documenten.slice(start, start + 400).forEach(bestelling => batch.delete(bestelling.ref));
+      await batch.commit();
+    }
+    status.textContent = documenten.length === 0
+      ? "Er waren geen testbestellingen om te verwijderen."
+      : `✓ ${documenten.length} testbestelling${documenten.length === 1 ? "" : "en"} verwijderd.`;
+    await laadTotaalPerProduct();
+    await laadSponsoring();
+    updateTabMetas();
+  } catch (error) {
+    status.textContent = "Wissen is niet gelukt. Er is niets uit de echte bestellingen verwijderd.";
+    console.error(error);
+  } finally {
+    knop.disabled = false;
+  }
 });
 
 
