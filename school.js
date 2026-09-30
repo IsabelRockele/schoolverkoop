@@ -14,6 +14,10 @@ function leerlingKlas(data) {
   return String(data.klas || data.leerling?.klas || "").trim();
 }
 
+function zuivereKlasWaarde(waarde) {
+  return String(waarde || "").replace(/\s+\(\d+\s+testbestelling(?:en)?\)\s*$/i, "").trim();
+}
+
 function koperNaam(data) {
   return data.naamKoper || data.koper?.naam || "";
 }
@@ -572,6 +576,7 @@ function renderTruffelTabel(tbodyEl, data, perGroteDoos, inkoopMap) {
 // B) TOTAAL PER KLAS
 // ============================
 async function laadTotaalPerKlas(klas) {
+  klas = zuivereKlasWaarde(klas);
   tabelKlas.innerHTML = "";
 
   if (!klas) {
@@ -633,6 +638,7 @@ function maakCel(tekst, className = "") {
 }
 
 async function laadKlasDetail(klas) {
+  klas = zuivereKlasWaarde(klas);
   const tabel = document.getElementById("klasDetail");
   const thead = tabel.querySelector("thead");
   const tbody = tabel.querySelector("tbody");
@@ -735,10 +741,15 @@ async function laadBeschikbareKlassen() {
       optie.value = klas;
     });
 
-    if (aantallen.size === 1 && !klasFilter.value) {
+    if (aantallen.size === 1) {
       klasFilter.value = aantallen.keys().next().value;
-      await laadTotaalPerKlas(klasFilter.value);
-      await laadKlasDetail(klasFilter.value);
+    }
+
+    const geselecteerdeKlas = zuivereKlasWaarde(klasFilter.value);
+    if (geselecteerdeKlas) {
+      klasFilter.value = geselecteerdeKlas;
+      await laadTotaalPerKlas(geselecteerdeKlas);
+      await laadKlasDetail(geselecteerdeKlas);
     }
   } catch (error) {
     console.error("De klassen konden niet worden geladen:", error);
@@ -748,6 +759,7 @@ async function laadBeschikbareKlassen() {
 // D) DATA PER KIND (ALFABETISCH + PER KOPER)
 // ============================
 async function verzamelBestellingenPerKind(klas) {
+ klas = zuivereKlasWaarde(klas);
  const snapshot = await haalAlleTestdocumenten();
 
 
@@ -1121,6 +1133,7 @@ y += 14;
 // C) PDF PER KLAS
 // ============================
 async function genereerPdfPerKlas(klas) {
+  klas = zuivereKlasWaarde(klas);
   const snapshot = await haalAlleTestdocumenten();
 
   // =========================
@@ -1341,8 +1354,9 @@ if (btnPdfTruffels) {
 
 
 klasFilter.addEventListener("change", () => {
-  laadTotaalPerKlas(klasFilter.value);
-  laadKlasDetail(klasFilter.value);
+  const klas = zuivereKlasWaarde(klasFilter.value);
+  laadTotaalPerKlas(klas);
+  laadKlasDetail(klas);
 });
 
 downloadPdfBtn.addEventListener("click", () => {
@@ -1350,11 +1364,11 @@ downloadPdfBtn.addEventListener("click", () => {
     alert("Kies eerst een klas.");
     return;
   }
-  genereerPdfPerKlas(klasFilter.value);
+  genereerPdfPerKlas(zuivereKlasWaarde(klasFilter.value));
 });
 
 downloadPdfPerKind.addEventListener("click", () => {
-  const klas = klasFilter.value;
+  const klas = zuivereKlasWaarde(klasFilter.value);
 
   if (!klas) {
     alert("Kies eerst een klas.");
