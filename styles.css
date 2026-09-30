@@ -1593,6 +1593,43 @@ button {
 @media (max-width: 650px) {
   .qr-beheer-inhoud { align-items: flex-start; flex-direction: column; }
 }
+
+.mollie-profiel-link { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #b9d0ef; border-radius: 10px; background: #f1f7ff; }
+.mollie-profiel-link p { margin: 4px 0; color: #4f5f70; }
+.mollie-profiel-link a:not(.btn) { color: #155fc0; overflow-wrap: anywhere; }
+.mollie-profiel-link .btn { width: auto; flex: 0 0 auto; margin: 0; }
+.koper-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 18px; }
+.koper-footer a { color: inherit; }
+
+.mollie-profiel-pagina { margin: 0; background: #f2f7f3; color: #17231c; }
+.mollie-profiel-kop { display: flex; align-items: center; gap: 22px; max-width: 1120px; margin: 28px auto 0; padding: 26px 30px; border-radius: 16px; background: #174f32; color: white; }
+.mollie-profiel-kop img { width: 92px; height: 92px; object-fit: contain; padding: 7px; border-radius: 12px; background: white; }
+.mollie-profiel-kop h1 { margin: 3px 0 4px; font-size: clamp(26px, 4vw, 42px); }
+.mollie-profiel-kop p { margin: 0; }
+.mollie-label { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; font-weight: 800; opacity: .82; }
+.mollie-profiel-inhoud { max-width: 1120px; margin: 20px auto; padding: 0 18px; }
+.mollie-intro { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px; border: 1px solid #d6e0d8; border-radius: 14px; background: white; }
+.mollie-intro h2 { margin-top: 0; }
+.mollie-intro p { margin-bottom: 0; line-height: 1.6; }
+.mollie-bestelknop { width: auto; min-width: 210px; margin: 0; text-align: center; text-decoration: none; }
+.mollie-profiel-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+.mollie-profiel-kaart { padding: 22px 24px; border: 1px solid #d6e0d8; border-radius: 14px; background: white; }
+.mollie-profiel-kaart h2 { margin: 0 0 12px; color: #174f32; font-size: 21px; }
+.mollie-profiel-kaart p, .mollie-profiel-kaart li { line-height: 1.62; }
+.mollie-profiel-kaart ol { padding-left: 22px; }
+.mollie-profiel-kaart a { color: #155fc0; }
+.mollie-profiel-breed { grid-column: 1 / -1; }
+.mollie-bijgewerkt { text-align: right; color: #69756d; font-size: 13px; }
+.mollie-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 20px; }
+.mollie-footer a { color: inherit; }
+@media (max-width: 760px) {
+  .mollie-profiel-link, .mollie-intro { align-items: stretch; flex-direction: column; }
+  .mollie-profiel-link .btn, .mollie-bestelknop { width: 100%; }
+  .mollie-profiel-raster { grid-template-columns: 1fr; }
+  .mollie-profiel-breed { grid-column: auto; }
+  .mollie-profiel-kop { margin: 12px; padding: 20px; }
+  .mollie-profiel-kop img { width: 70px; height: 70px; }
+}
 .sponsor-totaal-balk strong {
   font-weight: 700;
   font-size: 17px;
