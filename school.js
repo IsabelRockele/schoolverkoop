@@ -314,16 +314,19 @@ let leveranciersData = {
   Truffels250: {},
   Truffels500: {}
 };
+let totaalProductLading = 0;
 
 // ============================
 // A) TOTAAL PER PRODUCT (PER LEVERANCIER)
 // ============================
 async function laadTotaalPerProduct() {
+const dezeLading = ++totaalProductLading;
 tabelKerstrozen.innerHTML = "";
 tabelTruffels250.innerHTML = "";
 tabelTruffels500.innerHTML = "";
 
   const snapshot = await haalAlleTestdocumenten();
+  if (dezeLading !== totaalProductLading) return;
 
 
   // leverancier-indeling (simpel en duidelijk)
