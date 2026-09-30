@@ -233,7 +233,9 @@ document.getElementById("verkoopperiodeForm").addEventListener("submit", async e
 
 function maakQrCode() {
   const verkoopUrl = new URL("index.html", location.href).href;
-  document.getElementById("qrLink").textContent = verkoopUrl;
+  const qrLink = document.getElementById("qrLink");
+  qrLink.href = verkoopUrl;
+  qrLink.textContent = verkoopUrl;
   const houder = document.getElementById("qrCode");
   houder.innerHTML = "";
   new QRCode(houder, {

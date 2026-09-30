@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Schoolverkoop – Overzicht</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260930-instellingen-compact-1" />
   <link rel="stylesheet" href="beheer.css" />
 </head>
 
@@ -217,37 +217,49 @@
         <div class="tab-panel-header">
           <h2>Verkoop instellen</h2>
         </div>
-        <p class="muted">Deze verkoopprijzen worden getoond aan kopers en gebruikt voor nieuwe bestellingen.</p>
-        <form id="verkoopprijzenForm" class="prijsbeheer-form">
-          <label for="prijsTruffel250">Truffels 250 g (€)</label>
-          <input id="prijsTruffel250" type="text" inputmode="decimal" required />
-          <label for="prijsTruffel500">Truffels 500 g (€)</label>
-          <input id="prijsTruffel500" type="text" inputmode="decimal" required />
-          <label for="prijsKerstrozen">Kerstrozen (€)</label>
-          <input id="prijsKerstrozen" type="text" inputmode="decimal" required />
-          <button type="submit" class="btn">Prijzen opslaan</button>
-          <p id="prijsStatus" class="prijs-status" aria-live="polite"></p>
-        </form>
+        <div class="instellingen-raster">
+          <section class="instellingen-kaart">
+            <h3>Verkoopprijzen</h3>
+            <p class="muted">Deze prijzen worden getoond aan kopers en gebruikt voor nieuwe bestellingen.</p>
+            <form id="verkoopprijzenForm" class="prijsbeheer-form">
+              <label for="prijsTruffel250">Truffels 250 g (€)</label>
+              <input id="prijsTruffel250" type="text" inputmode="decimal" required />
+              <label for="prijsTruffel500">Truffels 500 g (€)</label>
+              <input id="prijsTruffel500" type="text" inputmode="decimal" required />
+              <label for="prijsKerstrozen">Kerstrozen (€)</label>
+              <input id="prijsKerstrozen" type="text" inputmode="decimal" required />
+              <button type="submit" class="btn">Prijzen opslaan</button>
+              <p id="prijsStatus" class="prijs-status" aria-live="polite"></p>
+            </form>
+          </section>
 
-        <hr class="instellingen-scheiding" />
-        <h3>Verkoopperiode en QR-code</h3>
-        <form id="verkoopperiodeForm" class="prijsbeheer-form">
-          <label for="startOp">Bestellen mogelijk vanaf</label>
-          <input id="startOp" type="datetime-local" required />
-          <label for="eindOp">Bestellen mogelijk tot en met</label>
-          <input id="eindOp" type="datetime-local" required />
-          <label for="afgeslotenTekst">Tekst na afsluiting</label>
-          <input id="afgeslotenTekst" type="text" maxlength="180" value="Bedankt voor jullie steun! De verkoop is ondertussen afgerond." required />
-          <button type="submit" class="btn">Verkoopperiode opslaan</button>
-          <p id="periodeStatus" class="prijs-status" aria-live="polite"></p>
-        </form>
+          <section class="instellingen-kaart">
+            <h3>Verkoopperiode</h3>
+            <p class="muted">Na de einddatum wordt bestellen automatisch geblokkeerd.</p>
+            <form id="verkoopperiodeForm" class="prijsbeheer-form">
+              <label for="startOp">Bestellen mogelijk vanaf</label>
+              <input id="startOp" type="datetime-local" required />
+              <label for="eindOp">Bestellen mogelijk tot en met</label>
+              <input id="eindOp" type="datetime-local" required />
+              <label for="afgeslotenTekst">Tekst na afsluiting</label>
+              <input id="afgeslotenTekst" type="text" maxlength="180" value="Bedankt voor jullie steun! De verkoop is ondertussen afgerond." required />
+              <button type="submit" class="btn">Verkoopperiode opslaan</button>
+              <p id="periodeStatus" class="prijs-status" aria-live="polite"></p>
+            </form>
+          </section>
+        </div>
 
         <div class="qr-beheer">
           <h3>QR-code voor ouders</h3>
           <p>Deze QR blijft dezelfde, ook wanneer je later de einddatum wijzigt.</p>
-          <div id="qrCode" class="qr-code" aria-label="QR-code naar de bestelpagina"></div>
-          <p class="qr-link" id="qrLink"></p>
-          <button type="button" id="downloadQr" class="btn secondary">QR-code met schoollogo downloaden</button>
+          <div class="qr-beheer-inhoud">
+            <div id="qrCode" class="qr-code" aria-label="QR-code naar de bestelpagina"></div>
+            <div class="qr-beheer-acties">
+              <p><strong>Link voor kopers</strong></p>
+              <p class="qr-link"><a id="qrLink" target="_blank" rel="noopener"></a></p>
+              <button type="button" id="downloadQr" class="btn secondary">QR-code met schoollogo downloaden</button>
+            </div>
+          </div>
         </div>
 
         <div class="gevaar-zone">
