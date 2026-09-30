@@ -165,6 +165,10 @@
       <section class="tab-panel" data-panel="klas" hidden>
         <div class="tab-panel-header">
           <h2>Totaal per klas</h2>
+          <div class="klas-knoppen">
+            <button id="downloadPdfKlas" class="btn secondary">PDF per klas</button>
+            <button id="downloadPdfPerKind" class="btn secondary">PDF per kind</button>
+          </div>
         </div>
 
         <div class="klas-filter-rij">
@@ -185,29 +189,7 @@
           </select>
         </div>
 
-        <div class="klas-knoppen">
-          <button id="downloadPdfKlas" class="btn secondary">
-            Download PDF per klas
-          </button>
-          <button id="downloadPdfPerKind" class="btn secondary">
-            Download besteloverzichten per kind (PDF)
-          </button>
-        </div>
-
-        <table id="totaalPerKlas" class="overzicht-tabel" style="margin-top:12px;">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Variant</th>
-              <th class="num">Aantal</th>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-
         <h3 class="subtabel-titel klas-detail-titel">Bestellingen per leerling</h3>
-        <p class="muted">Dit overzicht wordt onmiddellijk bijgewerkt wanneer je hierboven een andere klas kiest.</p>
         <div class="klas-detail-scroll">
           <table id="klasDetail" class="overzicht-tabel klas-detail-tabel">
             <thead></thead>
@@ -215,6 +197,20 @@
             <tfoot></tfoot>
           </table>
         </div>
+
+        <details class="klas-totalen-details">
+          <summary>Toon totaal per product voor deze klas</summary>
+          <table id="totaalPerKlas" class="overzicht-tabel">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Variant</th>
+                <th class="num">Aantal</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </details>
       </section>
 
       <section class="tab-panel" data-panel="instellen" hidden>
@@ -271,6 +267,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- ✅ DAN pas onze module -->
-  <script type="module" src="school.js?v=20260930-10"></script>
+  <script type="module" src="school.js?v=20260930-11"></script>
 </body>
 </html>
