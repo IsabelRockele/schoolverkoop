@@ -231,8 +231,10 @@ document.getElementById("verkoopperiodeForm").addEventListener("submit", async e
   }
 });
 
+const ONLINE_VERKOOP_URL = "https://isabelrockele.github.io/schoolverkoop/";
+
 function maakQrCode() {
-  const verkoopUrl = "https://isabelrockele.github.io/schoolverkoop/";
+  const verkoopUrl = ONLINE_VERKOOP_URL;
   const qrLink = document.getElementById("qrLink");
   qrLink.href = verkoopUrl;
   qrLink.textContent = verkoopUrl;
@@ -263,13 +265,43 @@ function maakQrCode() {
 }
 
 maakQrCode();
-document.getElementById("downloadQr").addEventListener("click", () => {
-  const canvas = document.querySelector("#qrCode canvas");
-  if (!canvas) return;
+document.getElementById("downloadQr").addEventListener("click", async () => {
+  const tijdelijkeHouder = document.createElement("div");
+  tijdelijkeHouder.style.cssText = "position:fixed;left:-10000px;top:0";
+  document.body.appendChild(tijdelijkeHouder);
+  new QRCode(tijdelijkeHouder, {
+    text: ONLINE_VERKOOP_URL,
+    width: 1200,
+    height: 1200,
+    correctLevel: QRCode.CorrectLevel.H,
+    colorDark: "#173e29",
+    colorLight: "#ffffff"
+  });
+  const canvas = tijdelijkeHouder.querySelector("canvas");
+  if (!canvas) {
+    tijdelijkeHouder.remove();
+    return;
+  }
+  const logo = new Image();
+  await new Promise(resolve => {
+    logo.onload = resolve;
+    logo.onerror = resolve;
+    logo.src = "afbeeldingen/schoollogo.png";
+  });
+  if (logo.complete && logo.naturalWidth) {
+    const ctx = canvas.getContext("2d");
+    const grootte = 245;
+    const x = (canvas.width - grootte) / 2;
+    const y = (canvas.height - grootte) / 2;
+    ctx.fillStyle = "white";
+    ctx.fillRect(x - 24, y - 24, grootte + 48, grootte + 48);
+    ctx.drawImage(logo, x, y, grootte, grootte);
+  }
   const link = document.createElement("a");
   link.download = "QR-schoolverkoop-De-Linde.png";
   link.href = canvas.toDataURL("image/png");
   link.click();
+  tijdelijkeHouder.remove();
 });
 
 document.getElementById("wisTestbestellingen").addEventListener("click", async () => {
@@ -652,18 +684,36 @@ async function laadKlasDetail(klas) {
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
 
-  const kop = document.createElement("tr");
-  ["Leerling", "Koper", ...KLAS_KOLOMMEN.map(item => item.label), "Totaal"].forEach(label => {
+  const groepskop = document.createElement("tr");
+  groepskop.className = "klas-groepskop";
+  groepskop.innerHTML = `
+    <th rowspan="2" class="kolom-leerling">Leerling</th>
+    <th rowspan="2" class="kolom-koper">Koper</th>
+    <th colspan="3" class="groep-kerstrozen">Kerstrozen</th>
+    <th colspan="6" class="groep-truffels">Truffels</th>
+    <th rowspan="2" class="groep-sponsoring">Sponsoring</th>
+    <th rowspan="2" class="groep-totaal">Totaal</th>`;
+  thead.appendChild(groepskop);
+
+  const detailkop = document.createElement("tr");
+  ["Wit", "Roze", "Rood"].forEach(label => {
     const th = document.createElement("th");
+    th.className = "groep-kerstrozen";
     th.textContent = label;
-    kop.appendChild(th);
+    detailkop.appendChild(th);
   });
-  thead.appendChild(kop);
+  ["250 g wit", "250 g melk", "250 g donker", "500 g wit", "500 g melk", "500 g donker"].forEach(label => {
+    const th = document.createElement("th");
+    th.className = "groep-truffels";
+    th.textContent = label;
+    detailkop.appendChild(th);
+  });
+  thead.appendChild(detailkop);
 
   if (!klas) {
     const rij = document.createElement("tr");
     const cel = maakCel("Kies eerst een klas.", "muted");
-    cel.colSpan = KLAS_KOLOMMEN.length + 3;
+    cel.colSpan = KLAS_KOLOMMEN.length + 4;
     rij.appendChild(cel);
     tbody.appendChild(rij);
     return;
@@ -673,6 +723,7 @@ async function laadKlasDetail(klas) {
   const rijen = [];
   const kolomTotalen = Object.fromEntries(KLAS_KOLOMMEN.map(item => [item.key, 0]));
   let algemeenTotaal = 0;
+  let sponsoringTotaal = 0;
 
   snapshot.forEach(document => {
     const data = document.data();
@@ -685,11 +736,14 @@ async function laadKlasDetail(klas) {
       if (key in kolomTotalen) kolomTotalen[key] += aantal;
     });
     const totaal = Number(data.totaal || 0);
+    const sponsoring = Number(data.sponsorBedrag || 0);
     algemeenTotaal += totaal;
+    sponsoringTotaal += sponsoring;
     rijen.push({
       leerling: leerlingNaam(data) || "Onbekend",
       koper: koperNaam(data) || "Onbekend",
       aantallen,
+      sponsoring,
       totaal
     });
   });
@@ -698,7 +752,7 @@ async function laadKlasDetail(klas) {
   if (rijen.length === 0) {
     const rij = document.createElement("tr");
     const cel = maakCel("Geen bestellingen voor deze klas.", "muted");
-    cel.colSpan = KLAS_KOLOMMEN.length + 3;
+    cel.colSpan = KLAS_KOLOMMEN.length + 4;
     rij.appendChild(cel);
     tbody.appendChild(rij);
     return;
@@ -706,20 +760,22 @@ async function laadKlasDetail(klas) {
 
   rijen.forEach(item => {
     const rij = document.createElement("tr");
-    rij.appendChild(maakCel(item.leerling));
-    rij.appendChild(maakCel(item.koper));
-    KLAS_KOLOMMEN.forEach(kolom => rij.appendChild(maakCel(item.aantallen[kolom.key] || "–", "num")));
-    rij.appendChild(maakCel(euro(item.totaal), "num"));
+    rij.appendChild(maakCel(item.leerling, "kolom-leerling"));
+    rij.appendChild(maakCel(item.koper, "kolom-koper"));
+    KLAS_KOLOMMEN.forEach((kolom, index) => rij.appendChild(maakCel(item.aantallen[kolom.key] || "–", `num ${index < 3 ? "groep-kerstrozen" : "groep-truffels"}`)));
+    rij.appendChild(maakCel(item.sponsoring > 0 ? euro(item.sponsoring) : "–", "num groep-sponsoring"));
+    rij.appendChild(maakCel(euro(item.totaal), "num groep-totaal"));
     tbody.appendChild(rij);
   });
 
   const totaalRij = document.createElement("tr");
   totaalRij.className = "totaalrij";
-  const label = maakCel("Totaal klas");
+  const label = maakCel("Totaal klas", "kolom-totaallabel");
   label.colSpan = 2;
   totaalRij.appendChild(label);
-  KLAS_KOLOMMEN.forEach(kolom => totaalRij.appendChild(maakCel(kolomTotalen[kolom.key] || "–", "num")));
-  totaalRij.appendChild(maakCel(euro(algemeenTotaal), "num"));
+  KLAS_KOLOMMEN.forEach((kolom, index) => totaalRij.appendChild(maakCel(kolomTotalen[kolom.key] || "–", `num ${index < 3 ? "groep-kerstrozen" : "groep-truffels"}`)));
+  totaalRij.appendChild(maakCel(sponsoringTotaal > 0 ? euro(sponsoringTotaal) : "–", "num groep-sponsoring"));
+  totaalRij.appendChild(maakCel(euro(algemeenTotaal), "num groep-totaal"));
   tfoot.appendChild(totaalRij);
 }
 

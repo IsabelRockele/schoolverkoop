@@ -1554,17 +1554,21 @@ button {
 .btn-gevaar:disabled { opacity: .6; cursor: wait; }
 .klas-detail-titel { margin-top: 16px; }
 .klas-detail-scroll { width: 100%; overflow-x: auto; margin-top: 12px; }
-.klas-detail-tabel { width: 100%; min-width: 1080px; table-layout: fixed; }
-.klas-detail-tabel th { white-space: nowrap; font-size: 12px; padding: 9px 7px !important; text-align: center !important; }
+.klas-detail-tabel { width: 100%; min-width: 1160px; table-layout: fixed; }
+.klas-detail-tabel th { white-space: normal; line-height: 1.2; font-size: 12px; padding: 8px 6px !important; text-align: center !important; }
 .klas-detail-tabel td { white-space: nowrap; padding: 9px 7px !important; text-align: center !important; }
-.klas-detail-tabel th:nth-child(1), .klas-detail-tabel td:nth-child(1) { width: 150px; text-align: left !important; }
-.klas-detail-tabel th:nth-child(2), .klas-detail-tabel td:nth-child(2) { width: 145px; text-align: left !important; }
-.klas-detail-tabel th:nth-child(n+3):nth-child(-n+5) { background: #e8f4e9 !important; color: #185b32 !important; }
-.klas-detail-tabel td:nth-child(n+3):nth-child(-n+5) { background: #f4faf4; }
-.klas-detail-tabel th:nth-child(n+6) { background: #f5eadf !important; color: #71401d !important; }
-.klas-detail-tabel td:nth-child(n+6) { background: #fcf7f2; }
-.klas-detail-tabel tfoot td:nth-child(n+3):nth-child(-n+5) { background: #dceede; font-weight: 700; }
-.klas-detail-tabel tfoot td:nth-child(n+6) { background: #efdfcf; font-weight: 700; }
+.klas-detail-tabel .kolom-leerling { width: 150px; text-align: left !important; }
+.klas-detail-tabel .kolom-koper { width: 145px; text-align: left !important; }
+.klas-detail-tabel .kolom-totaallabel { text-align: left !important; font-weight: 700; }
+.klas-detail-tabel .groep-kerstrozen { background: #eef8ef !important; color: #185b32 !important; }
+.klas-detail-tabel .groep-truffels { background: #fcf3e9 !important; color: #71401d !important; }
+.klas-detail-tabel .groep-sponsoring { background: #eef5ff !important; color: #174f91 !important; }
+.klas-detail-tabel .groep-totaal { background: #f1f3f5 !important; font-weight: 700; }
+.klas-detail-tabel .klas-groepskop .groep-kerstrozen { background: #dceede !important; }
+.klas-detail-tabel .klas-groepskop .groep-truffels { background: #efdfcf !important; }
+.klas-detail-tabel tfoot td.groep-kerstrozen { background: #dceede !important; font-weight: 700; }
+.klas-detail-tabel tfoot td.groep-truffels { background: #efdfcf !important; font-weight: 700; }
+.klas-detail-tabel tfoot td.groep-sponsoring { background: #dceafd !important; font-weight: 700; }
 .klas-totalen-details { margin-top: 18px; border: 1px solid #d9e0db; border-radius: 8px; overflow: hidden; }
 .klas-totalen-details summary { padding: 12px 15px; cursor: pointer; font-weight: 700; background: #f4f6f5; }
 .klas-totalen-details table { margin-top: 0 !important; }

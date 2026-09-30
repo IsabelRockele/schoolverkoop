@@ -5,9 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Schoolverkoop</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    body.koperpagina-laden > :not(#koperLaadscherm) { visibility: hidden; }
+    #koperLaadscherm {
+      position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center;
+      background: #f4f8f5; color: #164f32; font: 700 18px/1.4 system-ui, sans-serif;
+      text-align: center; padding: 24px;
+    }
+    #koperLaadscherm img { display: block; width: 82px; max-height: 82px; object-fit: contain; margin: 0 auto 16px; }
+  </style>
 </head>
 
-<body>
+<body class="koperpagina-laden">
+  <div id="koperLaadscherm" role="status" aria-live="polite">
+    <div><img src="afbeeldingen/schoollogo.png" alt="" />Even geduld, de verkoop wordt geladen…</div>
+  </div>
   <header class="top">
   <img class="logo" src="afbeeldingen/schoollogo.png" alt="Schoollogo" />
 
@@ -151,7 +163,7 @@
 
   <footer class="footer">© Onze school — testomgeving</footer>
 
-  <script type="module" src="app.js?v=20260930-2"></script>
+  <script type="module" src="app.js?v=20260930-3"></script>
   <!-- Zwevende winkelmand-knop -->
 <button id="mandjeBtn" class="mandje-floating">
   🛒 Bestelling afronden <span id="mandjeAantal">(0)</span>

@@ -624,3 +624,7 @@ if (bewaardeSponsor > 0) {
   updateSponsorUI();
 }
 
+// Toon de pagina pas wanneer prijzen, verkoopperiode en producten volledig klaarstaan.
+document.body.classList.remove("koperpagina-laden");
+document.getElementById("koperLaadscherm")?.remove();
+
