@@ -11,7 +11,7 @@ function leerlingNaam(data) {
 }
 
 function leerlingKlas(data) {
-  return data.klas || data.leerling?.klas || "";
+  return String(data.klas || data.leerling?.klas || "").trim();
 }
 
 function koperNaam(data) {
@@ -20,6 +20,11 @@ function koperNaam(data) {
 
 function koperEmail(data) {
   return data.emailKoper || data.koper?.email || "";
+}
+
+function hoortBijActieveVerkoop(data) {
+  // De oudste testbestellingen hadden nog geen actieId.
+  return !data.actieId || data.actieId === ACTIEVE_ACTIE;
 }
 
 import { getApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -305,12 +310,7 @@ tabelKerstrozen.innerHTML = "";
 tabelTruffels250.innerHTML = "";
 tabelTruffels500.innerHTML = "";
 
-  const snapshot = await getDocs(
-  query(
-    collection(db, "bestellingen_test"),
-    where("actieId", "==", ACTIEVE_ACTIE)
-  )
-);
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
 
   // leverancier-indeling (simpel en duidelijk)
@@ -323,6 +323,7 @@ const leveranciers = {
 
   snapshot.forEach(doc => {
   const data = doc.data();
+  if (!hoortBijActieveVerkoop(data)) return;
   const producten = haalProductenUitBestelling(data);
 
   producten.forEach(p => {
@@ -570,17 +571,13 @@ async function laadTotaalPerKlas(klas) {
     return;
   }
 
-  const snapshot = await getDocs(
-  query(
-    collection(db, "bestellingen_test"),
-    where("actieId", "==", ACTIEVE_ACTIE)
-  )
-);
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
   const totalen = {};
 
   snapshot.forEach(doc => {
   const data = doc.data();
+  if (!hoortBijActieveVerkoop(data)) return;
   if (leerlingKlas(data) !== klas) return;
 
   const producten = haalProductenUitBestelling(data);
@@ -606,16 +603,41 @@ async function laadTotaalPerKlas(klas) {
     tabelKlas.appendChild(tr);
   });
 }
+
+async function laadBeschikbareKlassen() {
+  try {
+    const snapshot = await getDocs(collection(db, "bestellingen_test"));
+    const aantallen = new Map();
+    snapshot.forEach(document => {
+      const data = document.data();
+      if (!hoortBijActieveVerkoop(data)) return;
+      const klas = leerlingKlas(data);
+      if (klas) aantallen.set(klas, (aantallen.get(klas) || 0) + 1);
+    });
+
+    aantallen.forEach((aantal, klas) => {
+      let optie = Array.from(klasFilter.options).find(item => item.value === klas);
+      if (!optie) {
+        optie = document.createElement("option");
+        optie.value = klas;
+        klasFilter.appendChild(optie);
+      }
+      optie.textContent = `${klas} (${aantal} testbestelling${aantal === 1 ? "" : "en"})`;
+    });
+
+    if (aantallen.size === 1 && !klasFilter.value) {
+      klasFilter.value = aantallen.keys().next().value;
+      await laadTotaalPerKlas(klasFilter.value);
+    }
+  } catch (error) {
+    console.error("De klassen konden niet worden geladen:", error);
+  }
+}
 // ============================
 // D) DATA PER KIND (ALFABETISCH + PER KOPER)
 // ============================
 async function verzamelBestellingenPerKind(klas) {
- const snapshot = await getDocs(
-  query(
-    collection(db, "bestellingen_test"),
-    where("actieId", "==", ACTIEVE_ACTIE)
-  )
-);
+ const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
 
   const resultaat = {};
@@ -632,6 +654,7 @@ async function verzamelBestellingenPerKind(klas) {
 
   snapshot.forEach(doc => {
   const d = doc.data();
+  if (!hoortBijActieveVerkoop(d)) return;
 
   // ✅ juiste klas controleren
   if (leerlingKlas(d) !== klas) return;
@@ -1600,17 +1623,13 @@ async function genereerLeveranciersPdf() {
 let sponsorLijst = []; // { koperNaam, koperEmail, leerling, klas, bedrag, datum }
 
 async function laadSponsoring() {
-  const snapshot = await getDocs(
-    query(
-      collection(db, "bestellingen_test"),
-      where("actieId", "==", ACTIEVE_ACTIE)
-    )
-  );
+  const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
   sponsorLijst = [];
 
   snapshot.forEach(doc => {
     const d = doc.data();
+    if (!hoortBijActieveVerkoop(d)) return;
     const bedrag = Number(d.sponsorBedrag || 0);
     if (bedrag <= 0) return;
 
@@ -1827,6 +1846,7 @@ laadInkoopMapVanFirestore()
   .then(() => laadTotaalPerProduct())
   .then(updateTabMetas);
 laadSponsoring();
+laadBeschikbareKlassen();
 
 // Automatisch bijwerken als iemand terugkomt van de winstpagina
 window.addEventListener("focus", () => {

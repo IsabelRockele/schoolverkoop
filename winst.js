@@ -250,7 +250,7 @@ function saveLocalInkoop() {
 // ===============================
 // Init
 // ===============================
-document.addEventListener("DOMContentLoaded", () => {
+function startWinstPagina() {
 
   // terugknop
   const terugBtn = document.getElementById("terugNaarOverzicht");
@@ -297,7 +297,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const n = parseGetal(transportEl.value);
     transportEl.value = n.toFixed(2).replace(".", ",");
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startWinstPagina, { once: true });
+} else {
+  startWinstPagina();
+}
 
 // ===============================
 // Data ophalen & tabel bouwen
@@ -316,12 +322,7 @@ async function laadBasisGegevens() {
       omzet: 0
     }));
 
-    const snapshot = await getDocs(
-      query(
-        collection(db, "bestellingen_test"),
-        where("actieId", "==", ACTIEVE_ACTIE)
-      )
-    );
+    const snapshot = await getDocs(collection(db, "bestellingen_test"));
 
     // totals
     totaleOmzet = 0;
@@ -343,6 +344,7 @@ productenLijst.forEach(p => {
 
     snapshot.forEach(doc => {
       const data = doc.data();
+      if (data.actieId && data.actieId !== ACTIEVE_ACTIE) return;
       aantalBestellingen++;
       totaleOmzet += Number(data.totaal || 0);
       totaleSponsor += Number(data.sponsorBedrag || 0);
