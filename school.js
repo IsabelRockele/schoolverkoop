@@ -613,6 +613,105 @@ async function laadTotaalPerKlas(klas) {
   });
 }
 
+const KLAS_KOLOMMEN = [
+  { naam: "Kerstrozen", variant: "wit", label: "Kerstrozen wit" },
+  { naam: "Kerstrozen", variant: "roze", label: "Kerstrozen roze" },
+  { naam: "Kerstrozen", variant: "rood", label: "Kerstrozen rood" },
+  { naam: "Truffels 250 g", variant: "wit", label: "250 g wit" },
+  { naam: "Truffels 250 g", variant: "melk", label: "250 g melk" },
+  { naam: "Truffels 250 g", variant: "donker", label: "250 g donker" },
+  { naam: "Truffels 500 g", variant: "wit", label: "500 g wit" },
+  { naam: "Truffels 500 g", variant: "melk", label: "500 g melk" },
+  { naam: "Truffels 500 g", variant: "donker", label: "500 g donker" }
+].map(item => ({ ...item, key: `${item.naam}|||${item.variant}` }));
+
+function maakCel(tekst, className = "") {
+  const cel = document.createElement("td");
+  cel.textContent = tekst;
+  if (className) cel.className = className;
+  return cel;
+}
+
+async function laadKlasDetail(klas) {
+  const tabel = document.getElementById("klasDetail");
+  const thead = tabel.querySelector("thead");
+  const tbody = tabel.querySelector("tbody");
+  const tfoot = tabel.querySelector("tfoot");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+  tfoot.innerHTML = "";
+
+  const kop = document.createElement("tr");
+  ["Leerling", "Koper", ...KLAS_KOLOMMEN.map(item => item.label), "Totaal"].forEach(label => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    kop.appendChild(th);
+  });
+  thead.appendChild(kop);
+
+  if (!klas) {
+    const rij = document.createElement("tr");
+    const cel = maakCel("Kies eerst een klas.", "muted");
+    cel.colSpan = KLAS_KOLOMMEN.length + 3;
+    rij.appendChild(cel);
+    tbody.appendChild(rij);
+    return;
+  }
+
+  const snapshot = await haalAlleTestdocumenten();
+  const rijen = [];
+  const kolomTotalen = Object.fromEntries(KLAS_KOLOMMEN.map(item => [item.key, 0]));
+  let algemeenTotaal = 0;
+
+  snapshot.forEach(document => {
+    const data = document.data();
+    if (!hoortBijActieveVerkoop(data) || leerlingKlas(data) !== klas) return;
+    const aantallen = {};
+    haalProductenUitBestelling(data).forEach(product => {
+      const key = `${product.naam}|||${String(product.variant || "").toLowerCase()}`;
+      const aantal = Number(product.aantal || 0);
+      aantallen[key] = (aantallen[key] || 0) + aantal;
+      if (key in kolomTotalen) kolomTotalen[key] += aantal;
+    });
+    const totaal = Number(data.totaal || 0);
+    algemeenTotaal += totaal;
+    rijen.push({
+      leerling: leerlingNaam(data) || "Onbekend",
+      koper: koperNaam(data) || "Onbekend",
+      aantallen,
+      totaal
+    });
+  });
+
+  rijen.sort((a, b) => a.leerling.localeCompare(b.leerling, "nl"));
+  if (rijen.length === 0) {
+    const rij = document.createElement("tr");
+    const cel = maakCel("Geen bestellingen voor deze klas.", "muted");
+    cel.colSpan = KLAS_KOLOMMEN.length + 3;
+    rij.appendChild(cel);
+    tbody.appendChild(rij);
+    return;
+  }
+
+  rijen.forEach(item => {
+    const rij = document.createElement("tr");
+    rij.appendChild(maakCel(item.leerling));
+    rij.appendChild(maakCel(item.koper));
+    KLAS_KOLOMMEN.forEach(kolom => rij.appendChild(maakCel(item.aantallen[kolom.key] || "–", "num")));
+    rij.appendChild(maakCel(euro(item.totaal), "num"));
+    tbody.appendChild(rij);
+  });
+
+  const totaalRij = document.createElement("tr");
+  totaalRij.className = "totaalrij";
+  const label = maakCel("Totaal klas");
+  label.colSpan = 2;
+  totaalRij.appendChild(label);
+  KLAS_KOLOMMEN.forEach(kolom => totaalRij.appendChild(maakCel(kolomTotalen[kolom.key] || "–", "num")));
+  totaalRij.appendChild(maakCel(euro(algemeenTotaal), "num"));
+  tfoot.appendChild(totaalRij);
+}
+
 async function laadBeschikbareKlassen() {
   try {
     const snapshot = await haalAlleTestdocumenten();
@@ -639,6 +738,7 @@ async function laadBeschikbareKlassen() {
     if (aantallen.size === 1 && !klasFilter.value) {
       klasFilter.value = aantallen.keys().next().value;
       await laadTotaalPerKlas(klasFilter.value);
+      await laadKlasDetail(klasFilter.value);
     }
   } catch (error) {
     console.error("De klassen konden niet worden geladen:", error);
@@ -1242,6 +1342,7 @@ if (btnPdfTruffels) {
 
 klasFilter.addEventListener("change", () => {
   laadTotaalPerKlas(klasFilter.value);
+  laadKlasDetail(klasFilter.value);
 });
 
 downloadPdfBtn.addEventListener("click", () => {

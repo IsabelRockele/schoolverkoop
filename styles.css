@@ -1544,6 +1544,11 @@ button {
 .btn-gevaar { border: 0; border-radius: 8px; padding: 11px 16px; background: #a72c2c; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 .btn-gevaar:hover { background: #852323; }
 .btn-gevaar:disabled { opacity: .6; cursor: wait; }
+.klas-detail-titel { margin-top: 28px; }
+.klas-detail-scroll { width: 100%; overflow-x: auto; margin-top: 12px; }
+.klas-detail-tabel { min-width: 1250px; }
+.klas-detail-tabel th { white-space: nowrap; font-size: 13px; }
+.klas-detail-tabel td { white-space: nowrap; }
 .verkoop-niet-actief { display: none !important; }
 .verkoopmelding { width: min(92%, 600px); margin: 50px auto; padding: 36px; text-align: center; background: white; border: 1px solid #d4e0d7; border-radius: 16px; box-shadow: 0 10px 30px rgba(30,70,42,.08); }
 .verkoopmelding img { width: 110px; max-height: 110px; object-fit: contain; }
