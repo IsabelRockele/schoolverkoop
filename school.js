@@ -27,6 +27,15 @@ function hoortBijActieveVerkoop(data) {
   return !data.actieId || data.actieId === ACTIEVE_ACTIE;
 }
 
+async function haalAlleTestdocumenten() {
+  const [huidige, oude] = await Promise.all([
+    getDocs(collection(db, "bestellingen_test")),
+    getDocs(collection(db, "_test"))
+  ]);
+  const docs = [...huidige.docs, ...oude.docs];
+  return { docs, forEach: callback => docs.forEach(callback) };
+}
+
 import { getApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
@@ -259,7 +268,7 @@ document.getElementById("downloadQr").addEventListener("click", () => {
 
 document.getElementById("wisTestbestellingen").addEventListener("click", async () => {
   const status = document.getElementById("wisStatus");
-  if (!confirm("Alle TESTbestellingen definitief verwijderen? Echte bestellingen worden niet geraakt.")) return;
+  if (!confirm("Alle oude en nieuwe TESTbestellingen definitief verwijderen? Echte bestellingen worden niet geraakt.")) return;
 
   const controle = prompt("Typ WISSEN om te bevestigen.");
   if (controle !== "WISSEN") {
@@ -271,7 +280,7 @@ document.getElementById("wisTestbestellingen").addEventListener("click", async (
   knop.disabled = true;
   status.textContent = "Testbestellingen worden verwijderd…";
   try {
-    const snapshot = await getDocs(collection(db, "bestellingen_test"));
+    const snapshot = await haalAlleTestdocumenten();
     const documenten = snapshot.docs;
     for (let start = 0; start < documenten.length; start += 400) {
       const batch = writeBatch(db);
@@ -310,7 +319,7 @@ tabelKerstrozen.innerHTML = "";
 tabelTruffels250.innerHTML = "";
 tabelTruffels500.innerHTML = "";
 
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await haalAlleTestdocumenten();
 
 
   // leverancier-indeling (simpel en duidelijk)
@@ -571,7 +580,7 @@ async function laadTotaalPerKlas(klas) {
     return;
   }
 
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await haalAlleTestdocumenten();
 
   const totalen = {};
 
@@ -606,7 +615,7 @@ async function laadTotaalPerKlas(klas) {
 
 async function laadBeschikbareKlassen() {
   try {
-    const snapshot = await getDocs(collection(db, "bestellingen_test"));
+    const snapshot = await haalAlleTestdocumenten();
     const aantallen = new Map();
     snapshot.forEach(document => {
       const data = document.data();
@@ -637,7 +646,7 @@ async function laadBeschikbareKlassen() {
 // D) DATA PER KIND (ALFABETISCH + PER KOPER)
 // ============================
 async function verzamelBestellingenPerKind(klas) {
- const snapshot = await getDocs(collection(db, "bestellingen_test"));
+ const snapshot = await haalAlleTestdocumenten();
 
 
   const resultaat = {};
@@ -1010,7 +1019,7 @@ y += 14;
 // C) PDF PER KLAS
 // ============================
 async function genereerPdfPerKlas(klas) {
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await haalAlleTestdocumenten();
 
   // =========================
   // 1. VASTE PRODUCTSTRUCTUUR
@@ -1623,7 +1632,7 @@ async function genereerLeveranciersPdf() {
 let sponsorLijst = []; // { koperNaam, koperEmail, leerling, klas, bedrag, datum }
 
 async function laadSponsoring() {
-  const snapshot = await getDocs(collection(db, "bestellingen_test"));
+  const snapshot = await haalAlleTestdocumenten();
 
   sponsorLijst = [];
 

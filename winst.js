@@ -30,6 +30,15 @@ const firebaseConfig = {
 const app = getApp();
 const db = getFirestore(app);
 
+async function haalAlleTestdocumenten() {
+  const [huidige, oude] = await Promise.all([
+    getDocs(collection(db, "bestellingen_test")),
+    getDocs(collection(db, "_test"))
+  ]);
+  const docs = [...huidige.docs, ...oude.docs];
+  return { docs, forEach: callback => docs.forEach(callback) };
+}
+
 // 🔹 Actieve verkoopactie
 const ACTIEVE_ACTIE = "kerstverkoop_2026";
 
@@ -322,7 +331,7 @@ async function laadBasisGegevens() {
       omzet: 0
     }));
 
-    const snapshot = await getDocs(collection(db, "bestellingen_test"));
+    const snapshot = await haalAlleTestdocumenten();
 
     // totals
     totaleOmzet = 0;
