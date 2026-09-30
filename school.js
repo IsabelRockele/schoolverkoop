@@ -232,7 +232,7 @@ document.getElementById("verkoopperiodeForm").addEventListener("submit", async e
 });
 
 function maakQrCode() {
-  const verkoopUrl = new URL("index.html", location.href).href;
+  const verkoopUrl = "https://isabelrockele.github.io/schoolverkoop/";
   const qrLink = document.getElementById("qrLink");
   qrLink.href = verkoopUrl;
   qrLink.textContent = verkoopUrl;
