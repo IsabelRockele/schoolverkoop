@@ -158,6 +158,12 @@ function toonPrijs(input, waarde) {
   input.value = Number(waarde).toFixed(2).replace(".", ",");
 }
 
+function werkAfsluitvoorbeeldBij() {
+  const invoer = document.getElementById("afgeslotenTekst");
+  const voorbeeld = document.getElementById("afgeslotenTekstVoorbeeld");
+  if (invoer && voorbeeld) voorbeeld.textContent = invoer.value.trim();
+}
+
 function naarLokaleDatumInput(timestamp) {
   const datum = timestamp?.toDate?.();
   if (!datum) return "";
@@ -177,6 +183,7 @@ async function laadVerkoopprijzen() {
     document.getElementById("startOp").value = naarLokaleDatumInput(data.startOp);
     document.getElementById("eindOp").value = naarLokaleDatumInput(data.eindOp);
     if (data.afgeslotenTekst) document.getElementById("afgeslotenTekst").value = data.afgeslotenTekst;
+    werkAfsluitvoorbeeldBij();
   } catch (error) {
     document.getElementById("prijsStatus").textContent = "Prijzen konden niet worden geladen.";
     console.error(error);
@@ -206,6 +213,8 @@ document.getElementById("verkoopprijzenForm").addEventListener("submit", async e
 });
 
 laadVerkoopprijzen();
+document.getElementById("afgeslotenTekst").addEventListener("input", werkAfsluitvoorbeeldBij);
+werkAfsluitvoorbeeldBij();
 
 document.getElementById("verkoopperiodeForm").addEventListener("submit", async event => {
   event.preventDefault();

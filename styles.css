@@ -1532,13 +1532,19 @@ button {
   margin-top: 14px;
 }
 .prijsbeheer-form label { font-weight: 700; }
-.prijsbeheer-form input { width: 100%; padding: 10px; border: 1px solid #b8c4bc; border-radius: 7px; font: inherit; }
+.prijsbeheer-form input, .prijsbeheer-form textarea { width: 100%; padding: 10px; border: 1px solid #b8c4bc; border-radius: 7px; font: inherit; box-sizing: border-box; }
+.prijsbeheer-form textarea { grid-column: 1 / -1; min-height: 112px; resize: vertical; line-height: 1.45; }
 .prijsbeheer-form .btn, .prijs-status { grid-column: 1 / -1; }
 .prijs-status { min-height: 22px; margin: 0; color: #1a5c3a; }
 .instellingen-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .instellingen-kaart { padding: 18px; border: 1px solid #d8e1da; border-radius: 12px; background: #fbfdfb; }
 .instellingen-kaart h3 { margin: 0 0 6px; }
 .instellingen-kaart .muted { margin: 0; min-height: 42px; }
+.afsluitscherm-voorbeeld { position: relative; margin-top: 14px; padding: 16px 18px; border: 1px dashed #a9c2b1; border-radius: 10px; background: #f4faf6; text-align: center; }
+.afsluitscherm-voorbeeld .voorbeeld-label { position: absolute; top: 8px; left: 10px; color: #637268; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.afsluitscherm-voorbeeld img { display: block; width: 54px; max-height: 54px; object-fit: contain; margin: 8px auto 6px; }
+.afsluitscherm-voorbeeld strong { display: block; color: #1f6a3e; font-size: 18px; }
+.afsluitscherm-voorbeeld p { margin: 7px auto 0; max-width: 540px; color: #3f4b43; line-height: 1.45; font-size: 14px; }
 .qr-beheer { margin-top: 18px; padding: 18px; border: 1px solid #d8e1da; border-radius: 12px; background: #f8fbf9; }
 .qr-beheer h3, .qr-beheer p { margin-top: 0; }
 .qr-beheer-inhoud { display: flex; gap: 22px; align-items: center; }
