@@ -751,6 +751,13 @@ select, input{
   border: 1px solid #ddd;
 }
 
+.veld-uitleg {
+  margin: -5px 0 14px;
+  color: #526057;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .mandje-totaal {
   display: flex;
   justify-content: space-between;

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Schoolverkoop</title>
-  <link rel="stylesheet" href="styles.css?v=20261001-leverdatum-1" />
+  <link rel="stylesheet" href="styles.css?v=20261001-emailuitleg-1" />
   <style>
     body.koperpagina-laden > :not(#koperLaadscherm) { visibility: hidden; }
     #koperLaadscherm {
@@ -131,7 +131,13 @@
   type="email"
   id="emailKoper"
   placeholder="koper@email.be"
+  autocomplete="email"
+  aria-describedby="emailKoperUitleg"
+  required
 />
+<p id="emailKoperUitleg" class="veld-uitleg">
+  We gebruiken je e-mailadres voor de bestelbevestiging en praktische berichten over deze schoolverkoop.
+</p>
 
 
         <!-- TOTAAL -->
@@ -169,7 +175,7 @@
     <a href="mollie.html#privacy">Privacy</a>
   </footer>
 
-  <script type="module" src="app.js?v=20261001-leverdatum-1"></script>
+  <script type="module" src="app.js?v=20261001-emailuitleg-1"></script>
   <!-- Zwevende winkelmand-knop -->
 <button id="mandjeBtn" class="mandje-floating">
   🛒 Bestelling afronden <span id="mandjeAantal">(0)</span>

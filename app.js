@@ -396,7 +396,7 @@ function controleerBestelKnop() {
   const heeftNaam = naamKindInput.value.trim() !== "";
   const heeftKlas = klasSelect.value !== "";
   const heeftNaamKoper = naamKoperInput.value.trim() !== "";
-  const heeftEmail = emailKoperInput.value.trim() !== "";
+  const heeftEmail = emailKoperInput.value.trim() !== "" && emailKoperInput.checkValidity();
 
   bestelKnop.disabled = !(heeftNaam && heeftKlas && heeftNaamKoper && heeftEmail);
 }
