@@ -164,6 +164,28 @@ function werkAfsluitvoorbeeldBij() {
   if (invoer && voorbeeld) voorbeeld.textContent = invoer.value.trim();
 }
 
+function formatteerLeverdatum(datumWaarde) {
+  if (!datumWaarde) return "";
+  const datum = new Date(`${datumWaarde}T12:00:00`);
+  if (!Number.isFinite(datum.getTime())) return "";
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(datum);
+}
+
+function werkLeveringsvoorbeeldBij() {
+  const invoer = document.getElementById("leverdatum");
+  const voorbeeld = document.getElementById("leveringsberichtVoorbeeld");
+  if (!invoer || !voorbeeld) return;
+  const datum = formatteerLeverdatum(invoer.value);
+  voorbeeld.textContent = datum
+    ? `Je bestelling wordt op ${datum} via de gekozen leerling meegegeven. Heb je ze een week later nog niet ontvangen? Neem dan contact op via administratie@bsdelinde.net.`
+    : "Kies eerst een leverdatum.";
+}
+
 function naarLokaleDatumInput(timestamp) {
   const datum = timestamp?.toDate?.();
   if (!datum) return "";
@@ -182,8 +204,10 @@ async function laadVerkoopprijzen() {
     toonPrijs(document.getElementById("prijsKerstrozen"), prijzen.kerstrozen || standaard.kerstrozen);
     document.getElementById("startOp").value = naarLokaleDatumInput(data.startOp);
     document.getElementById("eindOp").value = naarLokaleDatumInput(data.eindOp);
+    document.getElementById("leverdatum").value = data.leverdatum || "";
     if (data.afgeslotenTekst) document.getElementById("afgeslotenTekst").value = data.afgeslotenTekst;
     werkAfsluitvoorbeeldBij();
+    werkLeveringsvoorbeeldBij();
   } catch (error) {
     document.getElementById("prijsStatus").textContent = "Prijzen konden niet worden geladen.";
     console.error(error);
@@ -214,15 +238,22 @@ document.getElementById("verkoopprijzenForm").addEventListener("submit", async e
 
 laadVerkoopprijzen();
 document.getElementById("afgeslotenTekst").addEventListener("input", werkAfsluitvoorbeeldBij);
+document.getElementById("leverdatum").addEventListener("input", werkLeveringsvoorbeeldBij);
 werkAfsluitvoorbeeldBij();
+werkLeveringsvoorbeeldBij();
 
 document.getElementById("verkoopperiodeForm").addEventListener("submit", async event => {
   event.preventDefault();
   const status = document.getElementById("periodeStatus");
   const startOp = new Date(document.getElementById("startOp").value);
   const eindOp = new Date(document.getElementById("eindOp").value);
+  const leverdatum = document.getElementById("leverdatum").value;
   if (!Number.isFinite(startOp.getTime()) || !Number.isFinite(eindOp.getTime()) || eindOp <= startOp) {
     status.textContent = "De einddatum moet na de begindatum liggen.";
+    return;
+  }
+  if (!formatteerLeverdatum(leverdatum)) {
+    status.textContent = "Kies een geldige leverdatum.";
     return;
   }
   status.textContent = "Bezig met opslaan…";
@@ -230,10 +261,11 @@ document.getElementById("verkoopperiodeForm").addEventListener("submit", async e
     await setDoc(doc(db, "publieke_instellingen", ACTIEVE_ACTIE), {
       startOp,
       eindOp,
+      leverdatum,
       afgeslotenTekst: document.getElementById("afgeslotenTekst").value.trim(),
       aangepastOp: new Date()
     }, { merge: true });
-    status.textContent = "✓ Verkoopperiode opgeslagen. Openen en afsluiten gebeurt automatisch.";
+    status.textContent = "✓ Verkoopperiode en leverdatum opgeslagen. De leverdatum wordt gebruikt in de bestelbevestiging.";
   } catch (error) {
     status.textContent = "Opslaan is niet gelukt. Probeer opnieuw.";
     console.error(error);

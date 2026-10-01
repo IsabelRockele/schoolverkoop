@@ -75,6 +75,26 @@ try {
   console.warn("De ingestelde verkoopprijzen konden niet worden geladen; standaardprijzen worden gebruikt.", error);
 }
 
+function formatteerLeverdatum(datumWaarde) {
+  if (!datumWaarde) return "";
+  const datum = new Date(`${datumWaarde}T12:00:00`);
+  if (!Number.isFinite(datum.getTime())) return "";
+  return new Intl.DateTimeFormat("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(datum);
+}
+
+function maakLeveringsbericht(leerling) {
+  const datum = formatteerLeverdatum(publiekeInstellingen.leverdatum);
+  if (!datum) {
+    return `Je bestelling wordt via ${leerling} meegegeven. De school deelt de leverdatum nog mee.`;
+  }
+  return `Je bestelling wordt op ${datum} via ${leerling} meegegeven. Heb je ze een week later nog niet ontvangen? Neem dan contact op via administratie@bsdelinde.net.`;
+}
+
 // 🔹 DOM
 const productenEl = document.getElementById("producten");
 const statusEl = document.getElementById("status");
@@ -527,7 +547,7 @@ bestellingVergrendeld = true;
 
 // bevestiging zichtbaar op pagina (geen dubbele clicks)
 statusEl.textContent =
-  "Dank je voor je bestelling! Je ontvangt zo meteen een bevestiging via e-mail.";
+  `Dank je! Je bestelling is goed ontvangen.\n\n${maakLeveringsbericht(bestelling.leerling)}\n\nJe besteloverzicht blijft hieronder zichtbaar.`;
 statusEl.classList.remove("verborgen");
 statusEl.classList.add("groot");
 
