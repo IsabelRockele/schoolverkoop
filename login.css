@@ -8,6 +8,11 @@ h1 { margin: 0; text-align: center; color: #1f6a3e; font-size: 26px; }
 label { display: block; font-weight: 700; margin: 15px 0 6px; }
 input { width: 100%; border: 1px solid #aebcb2; border-radius: 8px; padding: 12px; font: inherit; }
 input:focus { outline: 3px solid #cfe8d7; border-color: #287647; }
+.wachtwoord-veld { position: relative; }
+.wachtwoord-veld input { padding-right: 50px; }
+.wachtwoord-oog { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; font-size: 20px; cursor: pointer; }
+.wachtwoord-oog:hover { background: #edf5ef; }
+.wachtwoord-oog:focus-visible { outline: 3px solid #cfe8d7; }
 button[type="submit"] { width: 100%; margin-top: 20px; border: 0; border-radius: 8px; padding: 13px; background: #287647; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 button:disabled { opacity: .65; cursor: wait; }
 .melding { min-height: 22px; color: #24623d; font-size: 14px; line-height: 1.4; }

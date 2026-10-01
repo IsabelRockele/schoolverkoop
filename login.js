@@ -11,6 +11,17 @@ const wachtwoord = document.getElementById("wachtwoord");
 const melding = document.getElementById("melding");
 const loginKnop = document.getElementById("loginKnop");
 const vergetenKnop = document.getElementById("vergetenKnop");
+const toonWachtwoordKnop = document.getElementById("toonWachtwoord");
+
+toonWachtwoordKnop.addEventListener("click", () => {
+  const zichtbaar = wachtwoord.type === "text";
+  wachtwoord.type = zichtbaar ? "password" : "text";
+  toonWachtwoordKnop.setAttribute("aria-pressed", String(!zichtbaar));
+  toonWachtwoordKnop.setAttribute("aria-label", zichtbaar ? "Wachtwoord tonen" : "Wachtwoord verbergen");
+  toonWachtwoordKnop.title = zichtbaar ? "Wachtwoord tonen" : "Wachtwoord verbergen";
+  toonWachtwoordKnop.textContent = zichtbaar ? "👁" : "🙈";
+  wachtwoord.focus();
+});
 
 function doelPagina() {
   const toegestaan = new Set(["school.html", "winst.html"]);

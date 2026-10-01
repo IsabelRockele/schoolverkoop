@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aanmelden – Beheer schoolverkoop</title>
-  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="login.css?v=20261001-1" />
 </head>
 <body>
   <main class="login-kaart">
@@ -17,7 +17,10 @@
       <input id="email" type="email" autocomplete="username" required />
 
       <label for="wachtwoord">Wachtwoord</label>
-      <input id="wachtwoord" type="password" autocomplete="current-password" required />
+      <div class="wachtwoord-veld">
+        <input id="wachtwoord" type="password" autocomplete="current-password" required />
+        <button type="button" id="toonWachtwoord" class="wachtwoord-oog" aria-label="Wachtwoord tonen" aria-pressed="false" title="Wachtwoord tonen">👁</button>
+      </div>
 
       <button type="submit" id="loginKnop">Aanmelden</button>
       <p id="melding" class="melding" role="alert" aria-live="polite"></p>
@@ -26,6 +29,6 @@
     <button type="button" id="vergetenKnop" class="linkknop">Wachtwoord vergeten?</button>
     <a href="index.html" class="teruglink">← Terug naar de bestelpagina</a>
   </main>
-  <script type="module" src="login.js?v=20260930-1"></script>
+  <script type="module" src="login.js?v=20261001-1"></script>
 </body>
 </html>
