@@ -91,6 +91,7 @@ function schrijfInstellingenNaarFirestore() {
   if (!initieleLoadKlaar) return; // nog niet klaar met initiaal laden
 
   if (schrijfTimer) clearTimeout(schrijfTimer);
+  toonSyncStatus("bezig");
   schrijfTimer = setTimeout(async () => {
     try {
       const mollieKost = parseGetal(document.getElementById("mollieKost").value);
@@ -119,23 +120,25 @@ function toonSyncStatus(status) {
   const el = document.getElementById("syncStatus");
   if (!el) return;
   if (status === "opgeslagen") {
-    el.textContent = "✓ opgeslagen";
+    const tijd = new Intl.DateTimeFormat("nl-BE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    }).format(new Date());
+    el.textContent = `✓ Opgeslagen in Firebase om ${tijd}. Beheerder en secretariaat zien dezelfde gegevens.`;
+    el.className = "sync-status ok";
+  } else if (status === "geladen") {
+    el.textContent = "✓ Gedeelde instellingen geladen uit Firebase.";
     el.className = "sync-status ok";
   } else if (status === "bezig") {
-    el.textContent = "opslaan…";
+    el.textContent = "Wijzigingen opslaan in Firebase…";
     el.className = "sync-status bezig";
   } else if (status === "fout") {
-    el.textContent = "⚠ offline — lokaal bewaard";
+    el.textContent = "⚠ Niet in Firebase opgeslagen. De wijziging staat voorlopig alleen op deze computer.";
     el.className = "sync-status fout";
-  }
-  // Na 2,5 s verdwijnen (behalve bij fout)
-  if (status === "opgeslagen") {
-    setTimeout(() => {
-      if (el.classList.contains("ok")) {
-        el.textContent = "";
-        el.className = "sync-status";
-      }
-    }, 2500);
+  } else if (status === "lokaal") {
+    el.textContent = "⚠ Nog geen gedeelde instellingen uit Firebase geladen. Wijzig een bedrag en wacht op de groene opslagbevestiging.";
+    el.className = "sync-status fout";
   }
 }
 
@@ -232,7 +235,7 @@ async function loadInstellingen() {
     // Ook naar localStorage schrijven als offline-backup
     saveLocalSettings();
     saveLocalInkoop();
-    return;
+    return "firebase";
   }
 
   // Terugvallen op localStorage
@@ -249,6 +252,7 @@ async function loadInstellingen() {
   } catch {}
 
   inkoopMap = lokaleInkoop;
+  return "lokaal";
 }
 
 function saveLocalSettings() {
@@ -282,9 +286,15 @@ function startWinstPagina() {
   }
 
   // Eerst instellingen laden (Firestore eerst, anders localStorage)
-  loadInstellingen().then(() => {
+  loadInstellingen().then(bron => {
     initieleLoadKlaar = true;
+    toonSyncStatus(bron === "firebase" ? "geladen" : "lokaal");
     // Data pas laden nadat instellingen binnen zijn (zodat de winstberekening klopt)
+    laadBasisGegevens();
+  }).catch(error => {
+    console.error("Instellingen konden niet worden geladen:", error);
+    initieleLoadKlaar = true;
+    toonSyncStatus("fout");
     laadBasisGegevens();
   });
 

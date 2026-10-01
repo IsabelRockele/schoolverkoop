@@ -301,24 +301,29 @@ td.num, th.num{
   font-weight: 500;
 }
 
-/* Sync-status indicator in header */
+/* Blijvende opslagstatus bij de velden */
 .sync-status {
-  display: inline-block;
-  margin-left: 10px;
-  padding: 2px 8px;
-  font-size: 11px;
-  border-radius: 10px;
-  transition: opacity 0.3s;
+  display: block;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
 }
 .sync-status.ok {
   background: #d8eddd;
   color: #1a5c3a;
+  border-color: #9bc8a8;
 }
 .sync-status.bezig {
   background: #e5e7eb;
   color: #374151;
+  border-color: #cbd5e1;
 }
 .sync-status.fout {
   background: #fef3c7;
   color: #92400e;
+  border-color: #f2c96d;
 }
