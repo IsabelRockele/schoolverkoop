@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mijn bestelling</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20261001-testbevestiging-1" />
 </head>
 <body>
 
@@ -71,12 +71,19 @@
   </div>
 
   <button id="betaalBtn" class="betaal-btn">
-  Betalen
+  Bestelling plaatsen (test)
 </button>
+
+  <section id="bestelBevestiging" class="bestel-bevestiging verborgen" tabindex="-1" aria-live="polite">
+    <h2>Bedankt! Je testbestelling is goed ontvangen.</h2>
+    <p id="bestelBevestigingTekst"></p>
+    <p><strong>Er werd nog geen betaling uitgevoerd.</strong> De bestelling staat als testbestelling klaar voor het secretariaat en de beheerder.</p>
+    <button type="button" id="terugNaarWinkel" class="btn secondary">Terug naar de bestelpagina</button>
+  </section>
 
 </div>
 
-<script type="module" src="mandje.js"></script>
+<script type="module" src="mandje.js?v=20261001-testbevestiging-1"></script>
 
 </body>
 </html>

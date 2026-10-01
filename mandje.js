@@ -129,6 +129,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const betaalBtn = document.getElementById("betaalBtn");
+const bevestiging = document.getElementById("bestelBevestiging");
+const bevestigingTekst = document.getElementById("bestelBevestigingTekst");
+const terugNaarWinkel = document.getElementById("terugNaarWinkel");
+
+terugNaarWinkel?.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
 
 if (betaalBtn) {
   betaalBtn.addEventListener("click", async () => {
@@ -156,32 +163,49 @@ if (betaalBtn) {
       .reduce((som, item) => som + item.aantal * item.prijs, 0);
 
     const totaal = productenTotaal + sponsor;
+    const producten = Object.values(mandje).map(item => ({
+      naam: String(item.naam || ""),
+      variant: String(item.variant || ""),
+      aantal: Number(item.aantal || 0),
+      prijs: Number(item.prijs || 0)
+    }));
 
     try {
+      betaalBtn.disabled = true;
+      betaalBtn.textContent = "Testbestelling opslaan…";
+
       await addDoc(collection(db, "bestellingen_test"), {
         actieId: "kerstverkoop_2026",
-        leerling: { naam: naamKind, klas },
-        koper: { naam: naamKoper, email: emailKoper },
-        bestelling: mandje,
+        leerling: naamKind,
+        klas,
+        naamKoper,
+        emailKoper,
+        producten,
         sponsorBedrag: sponsor,
         totaal,
+        status: "test",
         aangemaaktOp: serverTimestamp()
       });
 
       localStorage.removeItem("mandje");
       localStorage.removeItem("sponsor");
 
-      alert(
-        "Bedankt voor je bestelling!\n\n" +
-        "Je ontvangt een mail met de bestelbevestiging.\n" +
-        "Kijk ook even in je spam."
-      );
+      document.querySelector(".bestel-formulier")?.classList.add("verborgen");
+      document.querySelector(".mandje-totaal")?.classList.add("verborgen");
+      betaalBtn.classList.add("verborgen");
 
-      window.location.href = "index.html";
+      bevestigingTekst.textContent =
+        `Bestelling voor ${naamKind} (${klas}), geplaatst door ${naamKoper}, voor ${formatEuro(totaal)}. ` +
+        `Bij de latere echte verkoop wordt de bestelbevestiging ook naar ${emailKoper} gemaild.`;
+      bevestiging.classList.remove("verborgen");
+      bevestiging.focus();
+      bevestiging.scrollIntoView({ behavior: "smooth", block: "start" });
 
     } catch (err) {
       console.error(err);
-      alert("Er ging iets mis bij het opslaan.");
+      betaalBtn.disabled = false;
+      betaalBtn.textContent = "Bestelling plaatsen (test)";
+      alert("De testbestelling kon niet worden opgeslagen. Controleer je internetverbinding en probeer opnieuw.");
     }
   });
 }

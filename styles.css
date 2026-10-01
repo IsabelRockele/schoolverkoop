@@ -1639,6 +1639,10 @@ button {
 .mollie-bijgewerkt { text-align: right; color: #69756d; font-size: 13px; }
 .mollie-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 20px; }
 .mollie-footer a { color: inherit; }
+.bestel-bevestiging { margin-top: 22px; padding: 24px; border: 2px solid #2e7d52; border-radius: 14px; background: #eef8f1; color: #173c28; }
+.bestel-bevestiging h2 { margin: 0 0 12px; color: #175c38; }
+.bestel-bevestiging p { line-height: 1.55; }
+.bestel-bevestiging .btn { width: auto; margin: 8px 0 0; }
 @media (max-width: 760px) {
   .mollie-profiel-link, .mollie-intro { align-items: stretch; flex-direction: column; }
   .mollie-profiel-link .btn, .mollie-bestelknop { width: 100%; }
