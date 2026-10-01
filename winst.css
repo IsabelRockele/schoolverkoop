@@ -258,6 +258,63 @@ td.num, th.num{
   border-top: 1px solid #d1d5db;
 }
 
+.truffel-levering-rij td {
+  padding: 12px;
+  background: #fff8ed;
+  border-top: 1px solid #f0c98d;
+}
+
+.truffel-levering {
+  padding: 10px 12px;
+  color: #713f12;
+  background: #fffbeb;
+  border: 1px solid #f2c96d;
+  border-radius: 8px;
+}
+
+.truffel-levering.doel-gehaald {
+  color: #14532d;
+  background: #ecfdf3;
+  border-color: #86c99a;
+}
+
+.truffel-levering-kop {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.truffel-levering-kop span {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.truffel-voortgang {
+  height: 12px;
+  margin: 9px 0 7px;
+  overflow: hidden;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.truffel-voortgang span {
+  display: block;
+  height: 100%;
+  background: #d97706;
+  border-radius: inherit;
+}
+
+.doel-gehaald .truffel-voortgang span {
+  background: #16803a;
+}
+
+.truffel-levering-tekst {
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .subtotaal-rij td {
   padding: 8px;
 }

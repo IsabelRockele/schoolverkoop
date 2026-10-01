@@ -70,6 +70,7 @@ const LS_INKOOP = `winst_${ACTIEVE_ACTIE}_inkoopprijzen`;
 
 // Firestore-instellingen (gedeeld tussen alle gebruikers)
 const INSTELLINGEN_DOC_PAD = ["instellingen", ACTIEVE_ACTIE];
+const GRATIS_LEVERING_TRUFFELS_KG = 250;
 
 // Voorkom dat we schrijven vlak na laden (voorkomt race condition)
 let initieleLoadKlaar = false;
@@ -537,6 +538,47 @@ function renderWinstPerProductTabel() {
       <td class="num">${euro(subtotaalWinst)}</td>
     `;
     tbody.appendChild(subtotaal);
+
+    if (leverancier === "Truffels") {
+      const verkochtKg = perLeverancier[leverancier].reduce((totaal, product) => {
+        const gewichtKg = product.key.includes("_250_") ? 0.25
+          : product.key.includes("_500_") ? 0.5
+          : 0;
+        return totaal + (Number(product.aantal || 0) * gewichtKg);
+      }, 0);
+      const resterendKg = Math.max(0, GRATIS_LEVERING_TRUFFELS_KG - verkochtKg);
+      const percentage = Math.min(100, (verkochtKg / GRATIS_LEVERING_TRUFFELS_KG) * 100);
+      const doelGehaald = verkochtKg >= GRATIS_LEVERING_TRUFFELS_KG;
+      const kg = waarde => new Intl.NumberFormat("nl-BE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(waarde);
+
+      const leveringRij = document.createElement("tr");
+      leveringRij.className = "truffel-levering-rij";
+      leveringRij.innerHTML = `
+        <td colspan="9">
+          <div class="truffel-levering ${doelGehaald ? "doel-gehaald" : ""}">
+            <div class="truffel-levering-kop">
+              <strong>🚚 Gratis levering truffels vanaf ${kg(GRATIS_LEVERING_TRUFFELS_KG)} kg</strong>
+              <span>${kg(verkochtKg)} kg verkocht</span>
+            </div>
+            <div class="truffel-voortgang" role="progressbar"
+              aria-label="Voortgang naar gratis levering"
+              aria-valuemin="0" aria-valuemax="${GRATIS_LEVERING_TRUFFELS_KG}"
+              aria-valuenow="${Math.min(verkochtKg, GRATIS_LEVERING_TRUFFELS_KG)}">
+              <span style="width: ${percentage.toFixed(2)}%"></span>
+            </div>
+            <div class="truffel-levering-tekst">
+              ${doelGehaald
+                ? "✓ Grens van 250 kg bereikt: de levering is gratis."
+                : `Nog ${kg(resterendKg)} kg nodig voor gratis levering (${percentage.toFixed(1).replace(".", ",")}% bereikt).`}
+            </div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(leveringRij);
+    }
   });
 
   // listeners opnieuw koppelen
