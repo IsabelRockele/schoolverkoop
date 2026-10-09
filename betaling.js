@@ -13,17 +13,41 @@ async function check() {
     const result = await r.json();
     if (!r.ok) throw new Error(result.error);
     if (result.saved) {
-      status.textContent = 'Bedankt! Je testbetaling is geslaagd en je bestelling is ontvangen.';
+      status.textContent = 'Bedankt voor je bestelling!';
       const o = result.order;
-      uitleg.textContent = `Bestelnummer ${payment.id}. Voor ${o.names[0]} (${o.names[1]}). ` + (o.delivery ? `Voorziene leverdatum: ${o.delivery}. ` : 'De leverdatum wordt nog meegedeeld. ') + 'De bestelling wordt met deze leerling meegegeven. Heb je een week na de leverdatum nog niets ontvangen? Mail administratie@bsdelinde.net.';
+      uitleg.textContent = 'Je testbetaling is geslaagd en je bestelling is ontvangen.';
+      const gegevens = document.getElementById('betaalGegevens');
+      const dl = document.createElement('dl');
+      for (const [label, value] of [['Leerling', o.names[0]], ['Klas', o.names[1]], ['Bestelnummer', payment.id]]) {
+        const dt = document.createElement('dt'); dt.textContent = label;
+        const dd = document.createElement('dd'); dd.textContent = value;
+        dl.append(dt, dd);
+      }
+      gegevens.replaceChildren(dl);
+      const delivery = /^\d{4}-\d{2}-\d{2}$/.test(o.delivery || '') ? new Date(`${o.delivery}T12:00:00`) : null;
+      document.getElementById('leverDatum').textContent = delivery && !Number.isNaN(delivery.getTime())
+        ? `Voorziene leverdatum: ${new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' }).format(delivery)}.`
+        : 'De leverdatum wordt nog meegedeeld.';
+      document.getElementById('levering').hidden = false;
       const overview = document.getElementById('betaalOverzicht');
       overview.replaceChildren();
-      const lines = o.lines.map(([i,a,p]) => `${a} × ${labels[i]} — ${money(a*p)}`);
-      if (o.sponsor) lines.push(`Sponsoring — ${money(o.sponsor)}`);
-      lines.push(`Totaal: ${money(o.total)}`);
-      for (const line of lines) { const p = document.createElement('p'); p.textContent=line; overview.append(p); }
+      const heading = document.createElement('h3'); heading.textContent = 'Je bestelling';
+      const list = document.createElement('ul'); list.className = 'bestelregels';
+      const lines = o.lines.map(([i,a,p]) => [`${a} × ${labels[i]}`, money(a*p)]);
+      if (o.sponsor) lines.push(['Sponsoring', money(o.sponsor)]);
+      for (const [label, amount] of lines) {
+        const li = document.createElement('li'); li.className = 'bestelregel';
+        const name = document.createElement('span'); name.textContent = label;
+        const price = document.createElement('span'); price.className = 'bedrag'; price.textContent = amount;
+        li.append(name, price); list.append(li);
+      }
+      const total = document.createElement('p'); total.className = 'totaal';
+      const totalLabel = document.createElement('span'); totalLabel.textContent = 'Totaal';
+      const totalAmount = document.createElement('span'); totalAmount.className = 'bedrag'; totalAmount.textContent = money(o.total);
+      total.append(totalLabel, totalAmount); overview.append(heading, list, total);
       localStorage.removeItem('mandje'); localStorage.removeItem('sponsor'); sessionStorage.removeItem('mollie-poging');
       button.hidden = true;
+      document.getElementById('naarMandje').hidden = true;
     } else {
       const terminal = ['failed','canceled','expired'].includes(result.status);
       status.textContent = terminal ? 'De testbetaling is niet geslaagd.' : 'De testbetaling is nog niet afgerond.';
