@@ -1,4 +1,6 @@
 
+import { mollieTestActief, startTestbetaling } from './betaling-client.js';
+
 function laadMandje() {
   return JSON.parse(localStorage.getItem("mandje")) || {};
 }
@@ -129,6 +131,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const betaalBtn = document.getElementById("betaalBtn");
+if (mollieTestActief) betaalBtn.textContent = 'Testbetaling via Mollie';
 const bevestiging = document.getElementById("bestelBevestiging");
 const bevestigingTekst = document.getElementById("bestelBevestigingTekst");
 const terugNaarWinkel = document.getElementById("terugNaarWinkel");
@@ -174,6 +177,11 @@ if (betaalBtn) {
       betaalBtn.disabled = true;
       betaalBtn.textContent = "Testbestelling opslaan…";
 
+      if (mollieTestActief) {
+        await startTestbetaling({leerling:naamKind, klas, naamKoper, emailKoper, producten, sponsorBedrag:sponsor});
+        return;
+      }
+
       await addDoc(collection(db, "bestellingen_test"), {
         actieId: "kerstverkoop_2026",
         leerling: naamKind,
@@ -204,8 +212,8 @@ if (betaalBtn) {
     } catch (err) {
       console.error(err);
       betaalBtn.disabled = false;
-      betaalBtn.textContent = "Bestelling plaatsen (test)";
-      alert("De testbestelling kon niet worden opgeslagen. Controleer je internetverbinding en probeer opnieuw.");
+      betaalBtn.textContent = mollieTestActief ? 'Testbetaling via Mollie' : 'Bestelling plaatsen (test)';
+      alert(mollieTestActief ? err.message : "De testbestelling kon niet worden opgeslagen. Controleer je internetverbinding en probeer opnieuw.");
     }
   });
 }

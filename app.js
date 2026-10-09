@@ -1,3 +1,4 @@
+import { mollieTestActief, startTestbetaling } from './betaling-client.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
@@ -108,6 +109,7 @@ const klasSelect = document.getElementById("klas");
 const naamKoperInput = document.getElementById("naamKoper");
 const emailKoperInput = document.getElementById("emailKoper");
 const bestelKnop = document.getElementById("bestelKnop");
+if (mollieTestActief) bestelKnop.textContent = 'Testbetaling via Mollie';
 const nieuweBestellingKnop = document.getElementById("nieuweBestellingKnop");
 
 const nu = new Date();
@@ -540,6 +542,16 @@ bestelKnop.addEventListener("click", async () => {
   };
 
   try {
+ if (mollieTestActief) {
+   bestelKnop.disabled = true;
+   try {
+     await startTestbetaling({leerling:bestelling.leerling, klas:bestelling.klas, naamKoper:bestelling.naamKoper, emailKoper:bestelling.emailKoper, producten:bestelling.producten, sponsorBedrag});
+   } catch (error) {
+     bestelKnop.disabled = false;
+     alert(error.message);
+   }
+   return;
+ }
  await addDoc(collection(db, "bestellingen_test"), bestelling);
 
 // 🔒 OPTIE C: VERGRENDELEN NA OPSLAAN (mandje blijft staan)

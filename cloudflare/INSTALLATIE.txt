@@ -1,0 +1,46 @@
+MOLLIE TESTBETALINGEN - ZONDER FIREBASE BLAZE
+
+Voorbereid, nog niet online geactiveerd. Geen sleutels in deze bestanden.
+
+1. Maak een gratis account op https://dash.cloudflare.com/sign-up
+2. Workers & Pages > Create application / Create Worker.
+   Naam: schoolverkoop-testbetalingen. Hello World mag als start.
+3. Open Edit code. Vervang de code door de volledige inhoud van worker.mjs.
+   Klik Deploy. Gebruik Workers Free.
+4. Settings > Variables and Secrets > Add.
+   Type: Secret. Naam: MOLLIE_TEST_API_KEY.
+   Plak de test_... sleutel rechtstreeks in Value en klik Deploy.
+   De sleutel hoeft nergens lokaal bewaard te worden.
+5. Geef alleen de publieke https://...workers.dev URL door aan de bouwer.
+   Die komt in betaling-config.js bij PAYMENT_API, zonder afsluitende slash.
+   Daarna de websitewijzigingen publiceren.
+
+Alternatief vanuit deze map in de terminal:
+  npx wrangler login
+  npx wrangler deploy
+  npx wrangler secret put MOLLIE_TEST_API_KEY
+De laatste opdracht vraagt de sleutel via verborgen invoer.
+
+TESTEN
+- Houd de verkoopperiode open tijdens de hele test.
+- Open de website via de QR. De knop wordt Testbetaling via Mollie.
+- Plaats een bestelling en kies op Mollies testscherm de geslaagde status.
+- Controleer de bevestiging met producten en totaal.
+- Vernieuw het secretariaatsoverzicht: daar verschijnt de testbestelling.
+- Vernieuw de bevestigingspagina: geen tweede bestelling.
+- Test ook annuleren/mislukken: geen bestelling toegevoegd, mandje blijft staan.
+- De webhook slaat ook op als de koper niet naar de website terugkeert.
+
+BEPERKINGEN
+- Alleen testsleutels. Geen echte betalingen en geen mails.
+- Bestaande publieke create-regels voor bestellingen_test blijven in gebruik.
+  Deze testgegevens vormen geen betrouwbaar register van echte betalingen.
+- Gebruik fictieve namen: Mollie bewaart de testbestelling in metadata.
+- Verkoopperiode moet bij opslaan nog open staan, volgens bestaande regels.
+- Bij tijdelijke opslagfout: klik Status opnieuw controleren.
+- Herhaalde betaalmeldingen kunnen een gewiste test opnieuw aanmaken.
+  Rond tests eerst af; wis daarna. Schakel de Worker uit bij definitief stoppen.
+- Productie vereist aparte beveiligde opslag, rechten, misbruikbeperking en
+  volledige betaalstatusafhandeling. Dit is bewust geen live-koppeling.
+- Volledige verificatie kan pas na publicatie met een Mollie-testsessie.
+- Firebase Spark en Cloudflare Free behouden hun eigen gebruikslimieten.
