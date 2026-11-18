@@ -94,6 +94,14 @@ const http = require('node:http');
       const download=await pending; await download.saveAs(path.join(output,name));
       assert.ok(fs.statSync(path.join(output,name)).size>1000);
     }
+    assert.equal(await page.locator('#classListsPanel').isVisible(),true);
+    assert.equal(await page.locator('#studentSheetsPanel').isHidden(),true);
+    assert.equal(await page.locator('#classesZip').isVisible(),true);
+    assert.equal(await page.locator('#studentsZip').isHidden(),true);
+    await page.locator('#studentSheetsTab').click();
+    assert.equal(await page.locator('#classList').isHidden(),true);
+    assert.equal(await page.locator('#classesZip').isHidden(),true);
+    assert.equal(await page.locator('#studentsZip').isVisible(),true);
     await page.locator('#studentGroup').selectOption('K1');
     assert.equal(await page.locator('#group').inputValue(),'K1');
     assert.equal(await page.locator('#allStudentsPdf').count(),0);
@@ -114,13 +122,14 @@ const http = require('node:http');
     await page.locator('#student').selectOption({label:'Symons Yliana'});
     const reversedDownload=page.waitForEvent('download'); await page.locator('#studentPdf').click();
     await (await reversedDownload).saveAs(path.join(output,'yliana-samengevoegd.pdf'));
-    await page.locator('#group').selectOption('AKB');
+    await page.locator('#studentGroup').selectOption('AKB');
     assert.equal(await page.locator('#studentGroup').inputValue(),'AKB');
     assert.match(await page.locator('#classList').innerText(),/Geen bestellingen/);
     assert.equal(await page.locator('#studentPdf').isDisabled(),true);
     assert.equal(await page.locator('#classStudentsPdf').isDisabled(),true);
     // Each ZIP contains one PDF per populated class, even while empty AKB is selected.
     for(const [selector,zipName] of [['#classesZip','klasoverzichten.zip'],['#studentsZip','leerlingbladen.zip']]) {
+      await page.locator(selector==='#classesZip' ? '#classListsTab' : '#studentSheetsTab').click();
       const downloadReady=page.waitForEvent('download');await page.locator(selector).click();
       await (await downloadReady).saveAs(path.join(output,zipName));
       const {CFB}=require('./vendor/xlsx.full.min.js');

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css?v=20261118-eenvoudig">
+  <link rel="stylesheet" href="excel.css?v=20261118-klastabs">
 </head>
 <body>
   <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
@@ -49,17 +49,20 @@
         <p class="hint">Zonder Mollie-factuur rekenen we automatisch € 0,39 per bestelling. Een ingevulde factuur vervangt die schatting. Vul bij transport 0 in als er geen transportkosten zijn.</p>
       </section>
       <section class="card" data-panel="klassen" hidden>
-        <h2>Uitdeellijsten</h2>
-        <div class="controls"><label>Klas of AKB <select id="group"></select></label><button id="classPdf">PDF geselecteerde klas</button><button id="allClassesPdf">PDF alle klassen + AKB</button></div>
-        <p class="hint">Eén regel per leerling. Dezelfde naam binnen dezelfde klas wordt samengevoegd, ook als voornaam en achternaam omgekeerd staan. Verschillende spellingen blijven apart.</p>
-        <div id="classList" class="scroll"></div>
-        <details class="student-sheets" open>
-          <summary>Leveringsblad per leerling</summary>
-          <p class="hint">Eén PDF voor de gekozen klas. Elke leerling start op een eigen blad met alle kopers in aparte blokken. Bij veel kopers loopt de lijst verder op volgende bladen, telkens met dezelfde leerlingnaam en klas.</p>
-          <div class="controls"><label>Kies klas of AKB <select id="studentGroup"></select></label><button id="classStudentsPdf">Download leerlingbladen voor deze klas</button><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button></div>
-        </details>
-        <div class="controls"><button id="classesZip">ZIP klasoverzichten</button><button id="studentsZip">ZIP leerlingbladen per klas</button></div>
-        <p class="hint">Elke ZIP bevat een aparte PDF per klas met bestellingen, inclusief AKB als daar bestellingen zijn. Pak de ZIP uit en mail de PDF van de juiste klas naar de leerkracht.</p>
+        <div class="class-tabs" role="tablist" aria-label="Klasdocumenten">
+          <button id="classListsTab" role="tab" aria-selected="true" aria-controls="classListsPanel" data-class-tab="classListsPanel">Uitdeellijst per klas</button>
+          <button id="studentSheetsTab" role="tab" aria-selected="false" aria-controls="studentSheetsPanel" tabindex="-1" data-class-tab="studentSheetsPanel">Leveringsblad per leerling</button>
+        </div>
+        <div id="classListsPanel" role="tabpanel" aria-labelledby="classListsTab">
+          <div class="controls"><label>Klas of AKB <select id="group"></select></label><button id="classPdf">PDF geselecteerde klas</button><button id="allClassesPdf">PDF alle klassen + AKB</button><button id="classesZip">ZIP klasoverzichten</button></div>
+          <p class="hint">Eén regel per leerling. Dezelfde naam binnen dezelfde klas wordt samengevoegd, ook bij omgekeerde naamvolgorde of andere hoofdletters. Verschillende spellingen blijven apart. De ZIP bevat een aparte klaslijst-PDF per klas met bestellingen.</p>
+          <div id="classList" class="scroll"></div>
+        </div>
+        <div id="studentSheetsPanel" role="tabpanel" aria-labelledby="studentSheetsTab" hidden>
+          <div class="controls"><label>Kies klas of AKB <select id="studentGroup"></select></label><button id="classStudentsPdf">Download leerlingbladen voor deze klas</button><button id="studentsZip">ZIP leerlingbladen per klas</button></div>
+          <p class="hint">Eén PDF per klas. Elke leerling start op een eigen blad met alle kopers in aparte blokken. Vervolgbladen herhalen leerlingnaam en klas. De ZIP bevat een aparte PDF per klas met bestellingen, inclusief AKB als daar bestellingen zijn.</p>
+          <div class="controls"><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button></div>
+        </div>
         <p id="zipStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </section>
@@ -73,6 +76,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-automatisch"></script>
+  <script type="module" src="excel.js?v=20261118-klastabs"></script>
 </body>
 </html>

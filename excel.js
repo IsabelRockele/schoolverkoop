@@ -12,10 +12,27 @@ let workbook, result, filename = '', settings = {}, summary, costs, loadVersion 
 let activeYear = '2026', priceRevision = 0, pricesDirty = false, priceRequest = 0;
 let validPrices = false;
 function showPanel(name) {
+  if(name==='klassen') showClassPanel('classListsPanel');
   document.querySelectorAll('[data-panel]').forEach(panel => panel.hidden = panel.dataset.panel !== name);
   document.querySelectorAll('[data-tab]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === name)));
   window.scrollTo({top:0});
 }
+function showClassPanel(id) {
+  document.querySelectorAll('[data-class-tab]').forEach(button=>{
+    const selected=button.dataset.classTab===id;
+    button.setAttribute('aria-selected',String(selected));button.tabIndex=selected ? 0 : -1;
+    $(button.dataset.classTab).hidden=!selected;
+  });
+  $('zipStatus').textContent='';
+}
+const classTabs=[...document.querySelectorAll('[data-class-tab]')];
+classTabs.forEach((button,index)=>{
+  button.onclick=()=>showClassPanel(button.dataset.classTab);
+  button.onkeydown=event=>{
+    const next=event.key==='Home' ? 0 : event.key==='End' ? classTabs.length-1 : event.key==='ArrowRight' ? (index+1)%classTabs.length : event.key==='ArrowLeft' ? (index+classTabs.length-1)%classTabs.length : null;
+    if(next==null)return;event.preventDefault();classTabs[next].click();classTabs[next].focus();
+  };
+});
 document.querySelectorAll('[data-tab], [data-go]').forEach(button => button.onclick = () => showPanel(button.dataset.tab || button.dataset.go));
 function enableReports(enabled) {
   $('reports').hidden = !enabled;
