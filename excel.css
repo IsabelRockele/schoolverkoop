@@ -24,3 +24,15 @@ details{margin:12px 0}
 #settings th,#settings td{padding:8px 10px}
 #settings input{padding:6px}
 @media(max-width:700px){.panel-heading{align-items:start;flex-direction:column}.context-bar{gap:10px}.tabs{margin:0 -4px}.metrics{gap:8px}.metric{padding:14px}}
+.delivery-table{min-width:1100px!important;overflow-wrap:normal}
+.delivery-table th,.delivery-table td{text-align:center;padding:12px 8px}
+.delivery-table .student-name,.delivery-table thead tr:first-child th:first-child,.delivery-table tfoot th:first-child{text-align:left;min-width:190px}
+.delivery-table .group-start{border-left:2px solid #bfcbc2}
+.delivery-table thead .roses,.group-totals .roses{background:#f6e2e6}
+.delivery-table thead .truffles250,.group-totals .truffles250{background:#f1e7d3}
+.delivery-table thead .truffles500,.group-totals .truffles500{background:#e4e1f2}
+.delivery-table tbody tr:nth-child(even){background:#f7faf7}
+.delivery-table tfoot tr:first-child th{background:#194e46;color:white;font-size:.95rem;border-top:3px solid #194e46}
+.delivery-table .group-totals{font-weight:700}
+.student-sheets{border-top:1px solid #dbe4dc;padding-top:18px}
+#student{max-width:300px}

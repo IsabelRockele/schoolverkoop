@@ -1,5 +1,7 @@
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
 import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs';
+import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs';
+import { profitDetails } from './excel-profit.mjs';
 const $ = id => document.getElementById(id);
 const euro = cents => cents == null ? 'Nog in te vullen' : new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -167,8 +169,8 @@ function refresh() {
     if (!result || result.errors.length || !$('confirm').checked) return;
     summary = summarize(result.orders, settings);
     $('metrics').innerHTML = [['Bestellingen', result.orders.length], ['Omzet volgens Excel', euro(summary.revenue)], ['Waarvan giften', euro(summary.gifts)], ['Verkochte stuks', summary.products.reduce((s,p) => s + p.sold, 0)]].map(([label, value]) => `<div class="metric">${escape(label)}<strong>${escape(value)}</strong></div>`).join('');
-    const profit = profitValue();
-    $('profit').textContent = profit == null ? 'Winst nog niet volledig: vul de ontbrekende inkoopprijzen en beide kostenvelden in (ook wanneer ze 0 zijn).' : `Berekende winst: ${euro(profit)} = omzet ${euro(summary.revenue)} − inkoop volledige bestelling ${euro(summary.cost)} − overige kosten ${euro(costs.fees)} − transport ${euro(costs.transport)}. Op basis van alle bestellingen in deze export.`;
+    const details = profitDetails(summary,costs), profit = details.value;
+    $('profit').textContent = `${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}. Omzet ${euro(summary.revenue)} − ${details.excluded.some(s => s.startsWith('inkoop ')) ? 'bekende inkoopkosten' : 'inkoop volledige bestelling'} ${euro(details.knownCost)} − betaal- en overige kosten ${costs.fees == null ? 'nog niet ingevoerd' : euro(costs.fees)} − transport ${costs.transport == null ? 'nog niet ingevoerd' : euro(costs.transport)}.`;
     renderSupplier();
     $('profitProducts').innerHTML = table(['Product','Verkocht','Besteld','Omzet','Inkoop','Marge'],summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),p.cost == null ? 'Nog in te vullen' : euro(p.revenue-p.cost)]));
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = button.dataset.pdf === 'winst' && profit == null);
@@ -186,18 +188,23 @@ function renderSupplier() {
   document.querySelectorAll('[data-pdf="Kerstrozen"], [data-pdf="Truffels"]').forEach(button => button.hidden = button.dataset.pdf !== supplier);
 }
 $('supplier').onchange = renderSupplier;
-function profitValue() { return summary?.cost == null || costs.fees == null || costs.transport == null ? null : summary.revenue - summary.cost - costs.fees - costs.transport; }
+function profitValue() { return summary ? profitDetails(summary,costs).value : null; }
 const supplierHeaders = ['Product', 'Verkocht', 'Stuks/doos', 'Grote dozen', 'Bestellen (stuks)', 'Overschot', 'Inkoop/stuk', 'Inkooptotaal'];
 function supplierRows(supplier) { return summary.products.filter(p => p.supplier === supplier).map(p => [p.label, p.sold, p.pack, supplier === 'Truffels' ? p.boxes : '—', p.ordered, p.surplus, euro(p.unitCost), euro(p.cost)]); }
 function classData(group) {
-  const orders = result.orders.filter(o => o.group === group).sort((a,b) => a.student.localeCompare(b.student, 'nl') || a.row - b.row);
-  const active = PRODUCTS.filter(p => orders.some(o => o.items.some(i => i.key === p.key && i.count)));
-  const headers = ['Excelrij', 'Leerling', 'Koper', ...active.map(p => p.label), 'Meegegeven'];
-  const rows = orders.map(o => [o.row, o.student || '(naam ontbreekt)', o.buyer, ...active.map(p => o.items.find(i => i.key === p.key)?.count || '—'), '[  ]']);
-  if (orders.length) rows.push(['', 'TOTAAL', '', ...active.map(p => orders.reduce((sum,o) => sum + (o.items.find(i => i.key === p.key)?.count || 0), 0)), '']);
-  return { headers, rows };
+  const students = studentsFor(result.orders,group), totals = deliveryTotals(students);
+  const headers = ['Leerling', ...DELIVERY_GROUPS.flatMap(g => g.labels), 'Totaal stuks', 'Meegegeven'];
+  const rows = students.map(s => [s.name,...DELIVERY_KEYS.map(key => s.counts[key] || '—'),s.total,'[  ]']);
+  if (students.length) rows.push(['KLASTOTAAL',...DELIVERY_KEYS.map(key => totals.counts[key]),totals.total,'']);
+  return {headers, rows, totals, students};
 }
-function renderClass() { const data = classData($('group').value); $('classList').innerHTML = data.rows.length ? table(data.headers, data.rows) : '<p>Geen bestellingen voor deze groep in dit bestand.</p>'; $('classPdf').disabled = !data.rows.length; }
+function renderClass() {
+  const data = classData($('group').value);
+  const cellClass = i => i===0 ? 'student-name' : i<=9 ? `${DELIVERY_GROUPS[Math.floor((i-1)/3)].style} ${(i-1)%3===0 ? 'group-start' : ''}` : 'delivery-end';
+  $('classList').innerHTML = data.students.length ? `<table class="delivery-table"><thead><tr><th rowspan="2" scope="col">Leerling</th>${DELIVERY_GROUPS.map(g => `<th colspan="3" scope="colgroup" class="${g.style} group-start">${g.label}</th>`).join('')}<th rowspan="2" scope="col">Totaal<br>stuks</th><th rowspan="2" scope="col">Meegegeven</th></tr><tr>${DELIVERY_GROUPS.map(g => g.labels.map((label,i) => `<th scope="col" class="${g.style} ${i===0 ? 'group-start' : ''}">${label}</th>`).join('')).join('')}</tr></thead><tbody>${data.rows.slice(0,-1).map(row => `<tr>${row.map((value,i) => `<td class="${cellClass(i)}">${escape(value)}</td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr>${data.rows.at(-1).map((value,i) => `<th class="${i===1 || i===4 || i===7 ? 'group-start' : ''}" ${i===0 ? 'scope="row"' : ''}>${escape(value)}</th>`).join('')}</tr><tr class="group-totals"><th scope="row">Per productgroep</th>${DELIVERY_GROUPS.map((g,i) => `<td colspan="3" class="${g.style} group-start">${data.totals.groups[i]} ${i===0 ? 'kerstrozen' : `doosjes ${i===1 ? '250' : '500'} g`}</td>`).join('')}<td colspan="2">${data.totals.total} stuks samen</td></tr></tfoot></table>` : '<p>Geen bestellingen voor deze groep in dit bestand.</p>';
+  $('student').replaceChildren(...data.students.map(s => new Option(s.name,s.id)));
+  for (const id of ['classPdf','studentPdf','classStudentsPdf']) $(id).disabled = !data.students.length;
+}
 $('group').onchange = renderClass;
 // One table renderer for all PDFs: wraps text, repeats headers and paginates.
 function pdfReport(sections, name) {
@@ -209,15 +216,21 @@ function pdfReport(sections, name) {
     const text = value => String(value).replace(/€/g, 'EUR').replace(/—/g, '-');
     sections.forEach((section, sectionIndex) => {
       const weights = section.headers.map((_,i) => i === 0 ? 2 : 1);
-      if (section.classroom) { weights[0] = .65; weights[1] = 1.8; weights[2] = 1.8; }
+      if (section.classroom) { weights[0] = 3.5; weights[weights.length-1] = 1.5; }
       const cols = weights.map(w => width * w / weights.reduce((a,b) => a+b,0));
-      function row(cells, heading = false) {
-        pdf.setFont('helvetica', heading ? 'bold' : 'normal'); pdf.setFontSize(8);
+      function row(cells, heading = false, total = false) {
+        pdf.setFont('helvetica', heading || total ? 'bold' : 'normal'); pdf.setFontSize(section.classroom ? 9 : 8);
         const lines = cells.map((cell,i) => pdf.splitTextToSize(text(cell), cols[i] - 4));
         const height = Math.max(...lines.map(l => l.length), 1) * 3.7 + 5;
-        if (y + height > bottom && !heading) { pdf.addPage(); pageHeader(); pdf.setFont('helvetica','normal'); }
+        if (y + height > bottom && !heading) { pdf.addPage(); pageHeader(); pdf.setFont('helvetica',total ? 'bold' : 'normal'); }
         let x = left;
-        cells.forEach((_,i) => { pdf.setFillColor(heading ? 228 : 250, heading ? 238 : 251, heading ? 232 : 250); pdf.rect(x,y,cols[i],height,'F'); pdf.setTextColor(25,55,47); pdf.text(lines[i],x+2,y+4); x += cols[i]; });
+        cells.forEach((_,i) => {
+          const band = section.classroom && i>=1 && i<=9 ? DELIVERY_GROUPS[Math.floor((i-1)/3)] : null;
+          pdf.setFillColor(...(total ? [25,78,70] : heading && band ? band.color : heading ? [228,238,232] : [250,251,250]));
+          pdf.rect(x,y,cols[i],height,'F'); pdf.setTextColor(...(total ? [255,255,255] : [25,55,47]));
+          if (band && (i-1)%3===0) { pdf.setDrawColor(175,185,178); pdf.line(x,y,x,y+height); }
+          pdf.text(lines[i],i>0 && section.classroom ? x+cols[i]/2 : x+2,y+4,i>0 && section.classroom ? {align:'center'} : {}); x += cols[i];
+        });
         y += height + .5;
       }
       function pageHeader() {
@@ -225,10 +238,24 @@ function pdfReport(sections, name) {
         pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
         const notes = pdf.splitTextToSize(text(`De Linde | Verkoopjaar ${activeYear} | ${filename} | ${$('sheet').value}\n${section.note || ''}`),width);
         pdf.text(notes,left,22); y = 25 + notes.length * 3.5;
+        if (section.classroom) {
+          let x = left+cols[0];
+          DELIVERY_GROUPS.forEach((group,index) => {
+            const w = cols.slice(1+index*3,4+index*3).reduce((a,b) => a+b,0);
+            pdf.setFillColor(...group.color); pdf.rect(x,y,w,9,'F');
+            pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.text(group.label,x+w/2,y+6,{align:'center'}); x+=w;
+          });
+          y+=9;
+        }
         row(section.headers,true);
       }
       if (sectionIndex) pdf.addPage();
-      pageHeader(); section.rows.forEach(cells => row(cells));
+      pageHeader(); section.rows.forEach((cells,index) => row(cells,false,section.classroom && section.students.length>0 && index===section.rows.length-1));
+      if (section.classroom && section.students.length) {
+        if (y+14>bottom) { pdf.addPage(); pageHeader(); }
+        pdf.setTextColor(25,55,47); pdf.setFont('helvetica','bold'); pdf.setFontSize(10);
+        pdf.text(`Klastotalen: ${section.totals.groups[0]} kerstrozen | ${section.totals.groups[1]} doosjes truffels 250 g | ${section.totals.groups[2]} doosjes truffels 500 g | ${section.totals.total} stuks samen`,left,y+8);
+      }
     });
     for (let page = 1; page <= pdf.getNumberOfPages(); page++) { pdf.setPage(page); pdf.setFontSize(8); pdf.text(`${page} / ${pdf.getNumberOfPages()}`, 280, 202, {align:'right'}); }
     pdf.save(name);
@@ -239,15 +266,54 @@ document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = () =>
   const supplier = button.dataset.pdf;
   if (supplier === 'winst') {
     const profit = profitValue(); if (profit == null) return;
-    pdfReport([{ title:'Winstberekening schoolverkoop', note:`Alle bestellingen uit Excel, betaalstatus onbekend. Inkoop inclusief overschot. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Inkoop ${euro(summary.cost)}. Overige kosten ${euro(costs.fees)}. Transport ${euro(costs.transport)}. Berekende winst ${euro(profit)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),euro(p.revenue-p.cost)]) }], 'winstberekening.pdf');
+    const details = profitDetails(summary,costs);
+    pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Inkoop inclusief overschot. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop ${euro(details.knownCost)}. Betaal- en overige kosten ${euro(costs.fees)}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
   } else {
     const products = summary.products.filter(p => p.supplier === supplier);
     const total = products.some(p => p.cost == null) ? null : products.reduce((sum,p) => sum+p.cost,0);
     pdfReport([{title:`Bestelling leverancier - ${supplier}`, note:`Bestellen = aantal te leveren stuks, inclusief afronding naar volle dozen per soort. Inkooptotaal: ${euro(total)}.`, headers:supplierHeaders, rows:supplierRows(supplier)}], `leverancier_${supplier.toLowerCase()}.pdf`);
   }
 });
-function classSection(group) { return { title:`Uitdeellijst - ${group}`, classroom:true, note:'Aantallen per bestelling. Vink af bij het meegeven.', ...classData(group) }; }
+function classSection(group) { return { title:`Uitdeellijst - ${group}`, classroom:true, note:'Aantallen per leerling. Bestellingen met dezelfde leerlingnaam binnen deze klas zijn samengevoegd. Vink af bij het meegeven.', ...classData(group) }; }
 $('classPdf').onclick = () => pdfReport([classSection($('group').value)], `klas_${$('group').value.replace(/[^a-z0-9]/gi,'_')}.pdf`);
-$('allClassesPdf').onclick = () => pdfReport([...$('group').options].map(o => classSection(o.value)).map(section => section.rows.length ? section : {...section, rows:[section.headers.map((_,i) => i === 1 ? 'Geen bestellingen' : '')]}), 'alle_klassen_en_AKB.pdf');
+$('allClassesPdf').onclick = () => pdfReport([...$('group').options].map(o => classSection(o.value)).map(section => section.rows.length ? section : {...section, rows:[section.headers.map((_,i) => i === 0 ? 'Geen bestellingen' : '')]}), 'alle_klassen_en_AKB.pdf');
+function studentSheets(students, name) {
+  if (!students.length) return;
+  try {
+    if (!window.jspdf) throw Error('De PDFbibliotheek kon niet worden geladen.');
+    const pdf = new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+    students.forEach((student,index) => {
+      if (index) pdf.addPage();
+      pdf.setTextColor(25,55,47); pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+      pdf.text(`DE LINDE  |  SCHOOLVERKOOP ${activeYear}`,18,18);
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(22); pdf.text('Jouw levering',18,34);
+      pdf.setFontSize(16);
+      const nameLines=pdf.splitTextToSize(student.name,174);
+      pdf.text(nameLines,18,47);
+      let y=51+nameLines.length*6;
+      pdf.setFontSize(12); pdf.text(`Klas: ${student.group}`,18,y); y+=12;
+      DELIVERY_GROUPS.forEach(group => {
+        pdf.setFillColor(...group.color); pdf.rect(18,y,174,10,'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.text(group.label,22,y+7); pdf.text('Aantal',182,y+7,{align:'right'}); y+=10;
+        group.keys.forEach((key,i) => {
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(12); pdf.text(group.labels[i],22,y+7);
+          pdf.setFont('helvetica','bold'); pdf.text(String(student.counts[key] || '-'),182,y+7,{align:'right'});
+          pdf.setDrawColor(220,227,221); pdf.line(18,y+10,192,y+10); y+=10;
+        });
+        y+=5;
+      });
+      pdf.setFillColor(25,78,70); pdf.rect(18,y,174,12,'F'); pdf.setTextColor(255,255,255); pdf.setFontSize(13);
+      pdf.text('Totaal mee te geven',22,y+8); pdf.text(`${student.total} stuks`,182,y+8,{align:'right'}); y+=23;
+      pdf.setTextColor(25,55,47); pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+      pdf.text('[  ] Levering gecontroleerd',18,y); pdf.text('Meegegeven op: ........................',18,y+10);
+      pdf.setFontSize(10); pdf.text('Bedankt voor jullie steun aan onze school!',18,279);
+      pdf.text(`${index+1} / ${students.length}`,192,279,{align:'right'});
+    });
+    pdf.save(name);
+  } catch (error) { $('status').textContent=`PDF maken mislukt: ${error.message}`; }
+}
+$('studentPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value).filter(s => s.id===$('student').value),'levering_leerling.pdf');
+$('classStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value),'leveringsbladen_klas.pdf');
+$('allStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders),'leveringsbladen_alle_leerlingen.pdf');
 try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
 await loadYear();

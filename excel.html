@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css?v=20261118-tabs">
+  <link rel="stylesheet" href="excel.css?v=20261118-levering">
 </head>
 <body>
   <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
@@ -46,12 +46,18 @@
         <p id="profit" class="profit" aria-live="polite"></p>
         <div class="controls"><label>Betaal- en overige kosten totaal (€)<input id="fees" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><label>Transportkosten totaal (€)<input id="transport" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><button data-go="prijzen" class="secondary">Inkoopprijzen en bewaren</button></div>
         <div id="profitProducts" class="scroll"></div>
-        <p class="hint">Omzet volgens de export; ontvangen betalingen zijn niet bevestigd. Bewaar kosten via ‘Prijzen per jaar’.</p>
+        <p class="hint">Ontbrekende kosten staan tussen haakjes bij de voorlopige winst. Vul 0 in als een kost zeker niet van toepassing is. Omzet volgens de export; ontvangen betalingen zijn niet bevestigd. Bewaar kosten via ‘Prijzen per jaar’.</p>
       </section>
       <section class="card" data-panel="klassen" hidden>
         <h2>Uitdeellijsten</h2>
         <div class="controls"><label>Klas of AKB <select id="group"></select></label><button id="classPdf">PDF geselecteerde klas</button><button id="allClassesPdf">PDF alle klassen + AKB</button></div>
+        <p class="hint">Eén regel per leerling. Dezelfde naam binnen dezelfde klas wordt samengevoegd; verschillende schrijfwijzen blijven apart.</p>
         <div id="classList" class="scroll"></div>
+        <details class="student-sheets" open>
+          <summary>Leveringsblad per leerling</summary>
+          <p class="hint">Eén A4 per leerling, met de naam, klas en alle bestelde producten. Om bij de levering mee te geven.</p>
+          <div class="controls"><label>Leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button><button id="classStudentsPdf">PDF per leerling · deze klas</button><button id="allStudentsPdf">PDF per leerling · alle klassen</button></div>
+        </details>
       </section>
     </section>
     <section class="card" data-panel="prijzen" hidden>
@@ -64,6 +70,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-tabs"></script>
+  <script type="module" src="excel.js?v=20261118-levering"></script>
 </body>
 </html>
