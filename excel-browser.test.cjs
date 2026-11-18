@@ -107,15 +107,8 @@ const http = require('node:http');
       await (await pending).saveAs(path.join(output,name));
     }
     await page.screenshot({path:path.join(output,'klas-desktop.png'),fullPage:true});
-    await page.getByText('Dezelfde leerling met een andere spelling? Samenvoegen',{exact:true}).click();
-    await page.locator('#mergeSource').selectOption({label:'Inge cooremans'});
-    await page.locator('#mergeTarget').selectOption({label:'Inge cooreman'});
-    await page.locator('#mergeStudents').click();
-    assert.equal(await page.locator('#classList tbody tr').count(),3);
-    assert.match(await page.locator('#mergeStatus').innerText(),/samengevoegd/);
-    await page.locator('#student').selectOption({label:'Inge cooreman'});
-    const mergedDownload=page.waitForEvent('download'); await page.locator('#studentPdf').click();
-    await (await mergedDownload).saveAs(path.join(output,'inge-samengevoegd.pdf'));
+    assert.equal(await page.locator('#mergeStudents').count(),0);
+    assert.equal(await page.locator('#classList tbody tr').count(),4);
     await page.locator('#studentGroup').selectOption('L3');
     assert.equal(await page.locator('#classList tbody tr').count(),2);
     await page.locator('#student').selectOption({label:'Symons Yliana'});

@@ -27,9 +27,3 @@ test('reversed full name combines buyers in one pupil, within the same class onl
   assert.deepEqual(combined.orders.map(o=>o.row),[2,3]);
   assert.equal(studentsFor(rows,'L4').length,1);
 });
-test('explicit spelling correction combines delivery sheets without changing original names', () => {
-  const rows=[order(2,'Voorbeeld Anna','L3'),order(3,'Anna Voorbeel','L3')];
-  rows[1].deliveryStudent='Voorbeeld Anna';
-  const students=studentsFor(rows,'L3');assert.equal(students.length,1);
-  assert.equal(students[0].total,6);assert.equal(rows[1].student,'Anna Voorbeel');
-});

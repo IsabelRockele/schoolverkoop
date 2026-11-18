@@ -14,7 +14,7 @@ export function studentsFor(orders, group) {
   const students = new Map();
   for (const order of orders) {
     if (group != null && order.group !== group) continue;
-    const name = String(order.deliveryStudent ?? order.student ?? '').trim().replace(/\s+/g,' ');
+    const name = String(order.student ?? '').trim().replace(/\s+/g,' ');
     // Missing names cannot be assumed to belong to the same child.
     const id = JSON.stringify([order.group, name ? 'named' : 'missing', name ? nameKey(name) : order.row]);
     if (!students.has(id)) students.set(id,{id,name:name || `Naam ontbreekt (Excelrij ${order.row})`,group:order.group,counts:Object.fromEntries(PRODUCTS.map(p => [p.key,0])),orderCount:0,orders:[]});

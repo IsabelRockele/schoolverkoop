@@ -14,13 +14,13 @@ Zolang **Factuur Mollie** leeg is, wordt automatisch het aantal bestellingen × 
 
 Alleen inkoop, Mollie en transport gaan van de omzet af. Het oude veld voor overige/gecombineerde kosten is verwijderd. Als daar vroeger een positief bedrag was bewaard, toont de pagina een melding om te controleren welke bedragen in de twee huidige velden thuishoren. Het wordt niet stilzwijgend als Mollie-factuur geïnterpreteerd. Bij bewaren worden de oude overige kosten op nul gezet.
 
-Bestellingen met dezelfde leerlingnaam binnen dezelfde klas worden opgeteld, ongeacht hoofdletters, extra spaties of de volgorde van voornaam en achternaam. Andere spellingen kunnen via Leerlingen samenvoegen binnen dezelfde klas gecombineerd worden voor het ingelezen bestand. De oorspronkelijke namen in Excel blijven ongewijzigd. Ontbrekende namen blijven per Excelrij apart. Controleer naamvarianten in de bron voordat je de definitieve leveringsbladen afdrukt. De importcontrole op mogelijke dubbele bestellingen blijft van toepassing; samenvoegen per leerling schrapt geen bestellingen.
+Bestellingen met dezelfde leerlingnaam binnen dezelfde klas worden opgeteld, ongeacht hoofdletters, extra spaties of de volgorde van voornaam en achternaam. Echte spellingverschillen blijven apart en krijgen afzonderlijke leerlingbladen. Ontbrekende namen blijven per Excelrij apart. Controleer naamvarianten in de bron voordat je de definitieve leveringsbladen afdrukt. De importcontrole op mogelijke dubbele bestellingen blijft van toepassing; samenvoegen per leerling schrapt geen bestellingen.
 
 Het exportbestand bevat geen betaalstatus: omzet is het bedrag van alle bestellingen, niet een bevestiging van ontvangen betalingen. Het resultaat blijft voorlopig zolang de export voorlopig is. Bij gewijzigde productkolommen wordt de import geblokkeerd zodat onbekende producten niet stilzwijgend wegvallen. Formules worden niet uitgevoerd: gebruik de oorspronkelijke export met vaste waarden.
 
 ## Controle
 
-Onder Klassen + AKB staan twee ZIP-downloads: **ZIP klasoverzichten** bevat één uitdeellijst-PDF per klas; **ZIP leerlingbladen per klas** bevat één PDF per klas met alle leerlingbladen. Alleen klassen met bestellingen worden opgenomen, inclusief AKB als daar bestellingen zijn. Handmatig samengevoegde leerlingnamen gelden ook voor deze downloads. De ZIP-bestanden worden lokaal samengesteld met de al aanwezige SheetJS-bibliotheek. Pak ze uit om de PDF per klas naar de leerkracht te mailen.
+Onder Klassen + AKB staan twee ZIP-downloads: **ZIP klasoverzichten** bevat één uitdeellijst-PDF per klas; **ZIP leerlingbladen per klas** bevat één PDF per klas met alle leerlingbladen. Alleen klassen met bestellingen worden opgenomen, inclusief AKB als daar bestellingen zijn. De ZIP-bestanden worden lokaal samengesteld met de al aanwezige SheetJS-bibliotheek. Pak ze uit om de PDF per klas naar de leerkracht te mailen.
 
 `node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs excel-suppliers.test.mjs excel-student-pdf.test.mjs`
 

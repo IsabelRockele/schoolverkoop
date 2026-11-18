@@ -53,11 +53,6 @@
         <div class="controls"><label>Klas of AKB <select id="group"></select></label><button id="classPdf">PDF geselecteerde klas</button><button id="allClassesPdf">PDF alle klassen + AKB</button></div>
         <p class="hint">Eén regel per leerling. Dezelfde naam binnen dezelfde klas wordt samengevoegd, ook als voornaam en achternaam omgekeerd staan. Verschillende spellingen blijven apart.</p>
         <div id="classList" class="scroll"></div>
-        <details><summary>Dezelfde leerling met een andere spelling? Samenvoegen</summary>
-          <p class="hint">Kies twee vermeldingen van hetzelfde kind in deze klas. Alle bestellingen komen samen op de klaslijst en leerlingbladen. Dit geldt voor dit ingelezen bestand; bedragen en aantallen blijven behouden.</p>
-          <div class="controls"><label>Deze vermelding <select id="mergeSource"></select></label><label>Samenvoegen bij <select id="mergeTarget"></select></label><button id="mergeStudents">Leerlingen samenvoegen</button></div>
-          <p id="mergeStatus" class="hint" role="status"></p>
-        </details>
         <details class="student-sheets" open>
           <summary>Leveringsblad per leerling</summary>
           <p class="hint">Eén PDF voor de gekozen klas. Elke leerling start op een eigen blad met alle kopers in aparte blokken. Bij veel kopers loopt de lijst verder op volgende bladen, telkens met dezelfde leerlingnaam en klas.</p>
@@ -78,6 +73,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-klaszip"></script>
+  <script type="module" src="excel.js?v=20261118-automatisch"></script>
 </body>
 </html>
