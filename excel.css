@@ -36,3 +36,12 @@ details{margin:12px 0}
 .delivery-table .group-totals{font-weight:700}
 .student-sheets{border-top:1px solid #dbe4dc;padding-top:18px}
 #student{max-width:300px}
+.supplier-invoice{display:flex;justify-content:space-between;gap:20px;padding:16px;background:#e6f0ea;border-top:3px solid #2d7d4e;color:#1a5c3a;margin-top:20px}
+#suppliers tbody tr:last-child{font-weight:bold;background:#edf3ef}
+#suppliers h3{padding:7px;background:#f5f7f9;border:1px solid #ddd}
+#suppliers .supplier-invoice{padding:12px}
+#suppliers th,#suppliers td{padding:6px 10px}
+[data-panel="leveranciers"] .controls{margin:12px 0}
+#suppliers h3{margin:12px 0 8px}
+#suppliers .hint{margin:6px 0 14px}
+@media(max-width:700px){.supplier-invoice{flex-direction:column}}

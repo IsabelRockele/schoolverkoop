@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css?v=20261118-levering">
+  <link rel="stylesheet" href="excel.css?v=20261118-leveranciers">
 </head>
 <body>
   <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
@@ -37,7 +37,6 @@
       <section class="card" data-panel="leveranciers" hidden>
         <div class="panel-heading"><h2>Bestellen bij de leverancier</h2><button data-go="prijzen" class="secondary">Inkoopprijzen aanpassen</button></div>
         <div class="controls"><label>Leverancier <select id="supplier"><option>Kerstrozen</option><option>Truffels</option></select></label><button data-pdf="Kerstrozen">PDF kerstrozen</button><button data-pdf="Truffels" hidden>PDF truffels</button></div>
-        <p class="hint">Truffels worden per smaak en gewicht naar volle grote dozen afgerond. De inkoop omvat het overschot.</p>
         <div id="suppliers" class="scroll"></div>
       </section>
       <section class="card" data-panel="winst" hidden>
@@ -70,6 +69,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-levering"></script>
+  <script type="module" src="excel.js?v=20261118-leveranciers"></script>
 </body>
 </html>

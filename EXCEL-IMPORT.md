@@ -5,7 +5,7 @@ Open `excel.html` op dezelfde website als de bestaande schoolpagina. Er staat oo
 1. Selecteer de oorspronkelijke WPForms `.xlsx`-export en het juiste werkblad.
 2. Controleer de koppeling en bestellingen. Kolomnamen bepalen de koppeling, niet hun positie: **Waarde is de stukprijs**, **Hoeveelheid is het aantal**. Het bedrag in **Totaal** moet exact overeenkomen met de som van prijs × aantal en de gift. Fouten blokkeren alle rapporten. Mogelijke dubbele rijen worden gemeld en blijven meetellen tot de bron is gecorrigeerd.
 3. Vink de controle aan; het tabblad Leveranciers opent. De inkoopprijzen worden automatisch uit de bestaande winstberekening opgehaald voor het gekozen verkoopjaar. Onder **Prijzen per jaar** kun je prijzen per stuk / klein truffeldoosje aanpassen. De bestaande verpakking is 12 stuks voor 250 g en 8 voor 500 g, apart afgerond per smaak. Pas deze aantallen aan indien de leverancier andere verpakkingen gebruikt.
-4. Download per leverancier een PDF. Ontbrekende inkoopprijzen staan expliciet vermeld; de bestelaantallen blijven bruikbaar.
+4. Download per leverancier een PDF in de oorspronkelijke schoolopmaak: schoollogo, schooladres en facturatiegegevens. Kerstrozen op staande A4 met potmaat en minimumaantal bloemen; truffels op liggende A4 met aparte tabellen voor 250 g en 500 g. Beide bevatten totaalrijen en een groene balk met het te betalen bedrag. Ontbrekende inkoopprijzen staan expliciet vermeld; de bestelaantallen blijven bruikbaar en een onvolledig bedrag wordt niet als eindtotaal getoond.
 5. Onder **Winst** verschijnt meteen een berekening, ook als kosten ontbreken. Ontbrekende kosten staan expliciet tussen haakjes, bijvoorbeeld **Voorlopige winst: … (zonder transportkosten)**. Dit geldt ook voor ontbrekende inkoopprijzen. Dezelfde vermelding staat in de PDF. Vul 0 in als een kost zeker niet van toepassing is. De berekening trekt bekende inkoop inclusief overschot af. Ongeldige invoer blokkeert de berekening wel. Bewaar via **Prijzen per jaar → Prijzen en kosten bewaren**.
 6. Kies een klas of AKB en download de uitdeellijst, of download alle groepen in één PDF. AKB en Atheneum Klein-Brabant worden samengebracht. Andere klasnamen uit de export blijven behouden. De lijst bevat alleen leerlingnamen, met aparte kolomgroepen voor kerstrozen per kleur, truffels 250 g en truffels 500 g per smaak. Onderaan staan totalen per variant en per productgroep.
 7. Onder **Leveringsblad per leerling** kun je één leerling, de hele gekozen klas of alle klassen downloaden. Iedere leerling krijgt één staande A4 met naam, klas, productaantallen en afvinkruimte voor de levering. Er staan geen kopersnamen of prijzen op.
@@ -16,7 +16,7 @@ Het exportbestand bevat geen betaalstatus: omzet is het bedrag van alle bestelli
 
 ## Controle
 
-`node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs`
+`node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs excel-suppliers.test.mjs`
 
 ## Jaarprijzen en bestaande instellingen
 

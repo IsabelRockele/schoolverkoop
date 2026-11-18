@@ -2,6 +2,7 @@ import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './
 import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs';
 import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs';
 import { profitDetails } from './excel-profit.mjs';
+import { supplierSections, supplierTotal, supplierRows as supplierTableRows, supplierTotalRow, SUPPLIER_HEADERS, downloadSupplierPdf } from './excel-suppliers.mjs';
 const $ = id => document.getElementById(id);
 const euro = cents => cents == null ? 'Nog in te vullen' : new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -184,13 +185,15 @@ function refresh() {
 }
 function renderSupplier() {
   const supplier = $('supplier').value;
-  $('suppliers').innerHTML = summary ? table(supplierHeaders,supplierRows(supplier)) : '';
+  if (summary) {
+    const sections=supplierSections(summary,supplier);
+    const total=supplierTotal(sections.flatMap(section => section.products));
+    $('suppliers').innerHTML=sections.map(section => `<h3>${escape(section.title)}</h3>${supplier==='Kerstrozen' ? `<p class="hint">${escape(section.note)}</p>` : ''}${table(SUPPLIER_HEADERS[supplier],[...supplierTableRows(section,supplier),supplierTotalRow(section,supplier)])}${supplier==='Truffels' ? `<p class="hint">${escape(section.note)}</p>` : ''}`).join('')+`<div class="supplier-invoice"><strong>Te betalen aan leverancier ${supplier.toLowerCase()}${supplier==='Truffels' ? ' (250 g + 500 g)' : ''}</strong><strong>${total.cost==null ? 'Niet volledig: inkoopprijs ontbreekt' : euro(total.cost)}</strong></div>`;
+  } else $('suppliers').replaceChildren();
   document.querySelectorAll('[data-pdf="Kerstrozen"], [data-pdf="Truffels"]').forEach(button => button.hidden = button.dataset.pdf !== supplier);
 }
 $('supplier').onchange = renderSupplier;
 function profitValue() { return summary ? profitDetails(summary,costs).value : null; }
-const supplierHeaders = ['Product', 'Verkocht', 'Stuks/doos', 'Grote dozen', 'Bestellen (stuks)', 'Overschot', 'Inkoop/stuk', 'Inkooptotaal'];
-function supplierRows(supplier) { return summary.products.filter(p => p.supplier === supplier).map(p => [p.label, p.sold, p.pack, supplier === 'Truffels' ? p.boxes : '—', p.ordered, p.surplus, euro(p.unitCost), euro(p.cost)]); }
 function classData(group) {
   const students = studentsFor(result.orders,group), totals = deliveryTotals(students);
   const headers = ['Leerling', ...DELIVERY_GROUPS.flatMap(g => g.labels), 'Totaal stuks', 'Meegegeven'];
@@ -261,7 +264,7 @@ function pdfReport(sections, name) {
     pdf.save(name);
   } catch (error) { $('status').textContent = `PDF maken mislukt: ${error.message}`; }
 }
-document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = () => {
+document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = async () => {
   if (!summary) return;
   const supplier = button.dataset.pdf;
   if (supplier === 'winst') {
@@ -269,9 +272,10 @@ document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = () =>
     const details = profitDetails(summary,costs);
     pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Inkoop inclusief overschot. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop ${euro(details.knownCost)}. Betaal- en overige kosten ${euro(costs.fees)}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
   } else {
-    const products = summary.products.filter(p => p.supplier === supplier);
-    const total = products.some(p => p.cost == null) ? null : products.reduce((sum,p) => sum+p.cost,0);
-    pdfReport([{title:`Bestelling leverancier - ${supplier}`, note:`Bestellen = aantal te leveren stuks, inclusief afronding naar volle dozen per soort. Inkooptotaal: ${euro(total)}.`, headers:supplierHeaders, rows:supplierRows(supplier)}], `leverancier_${supplier.toLowerCase()}.pdf`);
+    button.disabled=true;
+    try { await downloadSupplierPdf(summary,supplier,activeYear); }
+    catch (error) { alert(`PDF maken mislukt: ${error.message}`); }
+    finally { button.disabled=false; }
   }
 });
 function classSection(group) { return { title:`Uitdeellijst - ${group}`, classroom:true, note:'Aantallen per leerling. Bestellingen met dezelfde leerlingnaam binnen deze klas zijn samengevoegd. Vink af bij het meegeven.', ...classData(group) }; }
