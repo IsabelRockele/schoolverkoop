@@ -1,7 +1,7 @@
-import { createStudentPdf } from './excel-student-pdf.mjs';
+import { createStudentPdf } from './excel-student-pdf.mjs?v=20261118-compact';
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
 import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs?v=20261118-eenvoudig';
-import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs?v=20261118-kopers';
+import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs?v=20261118-naamvolgorde';
 import { profitDetails } from './excel-profit.mjs?v=20261118-eenvoudig';
 import { supplierSections, supplierTotal, supplierRows as supplierTableRows, supplierTotalRow, SUPPLIER_HEADERS, downloadSupplierPdf } from './excel-suppliers.mjs';
 const $ = id => document.getElementById(id);
@@ -217,16 +217,33 @@ function classData(group) {
   return {headers, rows, totals, students};
 }
 function renderClass() {
+  $('mergeStatus').textContent='';
   $('studentGroup').value=$('group').value;
   const data = classData($('group').value);
   const cellClass = i => i===0 ? 'student-name' : i<=9 ? `${DELIVERY_GROUPS[Math.floor((i-1)/3)].style} ${(i-1)%3===0 ? 'group-start' : ''}` : 'delivery-end';
   $('classList').innerHTML = data.students.length ? `<table class="delivery-table"><thead><tr><th rowspan="2" scope="col">Leerling</th>${DELIVERY_GROUPS.map(g => `<th colspan="3" scope="colgroup" class="${g.style} group-start">${g.label}</th>`).join('')}<th rowspan="2" scope="col">Totaal<br>stuks</th><th rowspan="2" scope="col">Meegegeven</th></tr><tr>${DELIVERY_GROUPS.map(g => g.labels.map((label,i) => `<th scope="col" class="${g.style} ${i===0 ? 'group-start' : ''}">${label}</th>`).join('')).join('')}</tr></thead><tbody>${data.rows.slice(0,-1).map(row => `<tr>${row.map((value,i) => `<td class="${cellClass(i)}">${escape(value)}</td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr>${data.rows.at(-1).map((value,i) => `<th class="${i===1 || i===4 || i===7 ? 'group-start' : ''}" ${i===0 ? 'scope="row"' : ''}>${escape(value)}</th>`).join('')}</tr><tr class="group-totals"><th scope="row">Per productgroep</th>${DELIVERY_GROUPS.map((g,i) => `<td colspan="3" class="${g.style} group-start">${data.totals.groups[i]} ${i===0 ? 'kerstrozen' : `doosjes ${i===1 ? '250' : '500'} g`}</td>`).join('')}<td colspan="2">${data.totals.total} stuks samen</td></tr></tfoot></table>` : '<p>Geen bestellingen voor deze groep in dit bestand.</p>';
   $('student').replaceChildren(...data.students.map(s => new Option(s.name,s.id)));
+  $('mergeSource').replaceChildren(...data.students.map(s => new Option(s.name,s.id)));
+  updateMergeTargets();
   $('classStudentsPdf').textContent=`Download PDF voor ${$('group').value} · ${data.students.length} leerlingen`;
   for (const id of ['classPdf','studentPdf','classStudentsPdf']) $(id).disabled = !data.students.length;
 }
 $('group').onchange = renderClass;
 $('studentGroup').onchange = () => { $('group').value=$('studentGroup').value;renderClass(); };
+function updateMergeTargets() {
+  const students=studentsFor(result.orders,$('group').value);
+  $('mergeTarget').replaceChildren(...students.filter(s=>s.id!==$('mergeSource').value).map(s=>new Option(s.name,s.id)));
+  $('mergeStudents').disabled=students.length<2;
+}
+$('mergeSource').onchange=updateMergeTargets;
+$('mergeStudents').onclick=()=>{
+  const students=studentsFor(result.orders,$('group').value);
+  const source=students.find(s=>s.id===$('mergeSource').value),target=students.find(s=>s.id===$('mergeTarget').value);
+  if(!source || !target || source.id===target.id)return;
+  source.orders.forEach(order=>{order.deliveryStudent=target.name;});
+  renderClass();
+  $('mergeStatus').textContent=`${source.name} is samengevoegd bij ${target.name} in ${target.group}. Alle kopers staan nu bij deze leerling.`;
+};
 // One table renderer for all PDFs: wraps text, repeats headers and paginates.
 function pdfReport(sections, name) {
   try {

@@ -7,13 +7,16 @@ export const DELIVERY_GROUPS = [
 ];
 export const DELIVERY_KEYS = DELIVERY_GROUPS.flatMap(group => group.keys);
 const normalize = value => String(value || '').trim().replace(/\s+/g,' ').toLocaleLowerCase('nl');
+// Exported names may use either first-name/surname or surname/first-name order.
+// Match the same complete name parts only, always within the same class.
+const nameKey = value => normalize(value).split(' ').sort().join(' ');
 export function studentsFor(orders, group) {
   const students = new Map();
   for (const order of orders) {
     if (group != null && order.group !== group) continue;
-    const name = String(order.student || '').trim().replace(/\s+/g,' ');
+    const name = String(order.deliveryStudent ?? order.student ?? '').trim().replace(/\s+/g,' ');
     // Missing names cannot be assumed to belong to the same child.
-    const id = JSON.stringify([order.group, name ? 'named' : 'missing', name ? normalize(name) : order.row]);
+    const id = JSON.stringify([order.group, name ? 'named' : 'missing', name ? nameKey(name) : order.row]);
     if (!students.has(id)) students.set(id,{id,name:name || `Naam ontbreekt (Excelrij ${order.row})`,group:order.group,counts:Object.fromEntries(PRODUCTS.map(p => [p.key,0])),orderCount:0,orders:[]});
     const student = students.get(id);
     student.orderCount++;

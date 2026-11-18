@@ -28,6 +28,12 @@ test('many buyers continue with pupil identity and per-pupil page count',()=>{
   for(let i=1;i<=18;i++) assert.equal(raw.split(`Koper ${i}: Testkoper ${i})`).length-1,1);
   save(pdf,'leerling-veel-kopers.pdf');
 });
+test('three buyers with nine product lines leave room for the pupil total',()=>{
+  const pupil=student('Anna Voorbeeld',3);
+  pupil.orders[0].items.push(...Array.from({length:3},(_,i)=>({key:'truffels_500_melk',price:1000+i,count:1})));
+  pupil.total+=3;
+  assert.equal(createStudentPdf([pupil],2026,jsPDF).getNumberOfPages(),1);
+});
 test('repeated buyer combines quantities but preserves different unit prices',()=>{
   const pupil=student('Anna',3);pupil.orders[1].buyer=' testkoper 1 ';pupil.orders[1].items[0].price=700;
   const buyers=buyersFor(pupil);assert.equal(buyers.length,2);

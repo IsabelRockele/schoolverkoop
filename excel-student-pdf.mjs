@@ -85,7 +85,7 @@ export function createStudentPdf(students,year,JsPDF) {
       }
       pdf.setFillColor(243,247,244);pdf.rect(left,y,width,10,'F');pdf.setFont('helvetica','bold');pdf.setFontSize(10);
       pdf.text(`Totaal voor deze koper: ${buyer.count} stuks`,left+3,y+6);
-      pdf.text(money(buyer.total),left+width-3,y+6,{align:'right'});y+=17;
+      pdf.text(money(buyer.total),left+width-3,y+6,{align:'right'});y+=13;
     });
     if (y+19>bottom) nextPage();
     pdf.setFillColor(25,78,70);pdf.rect(left,y,width,18,'F');pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(11);

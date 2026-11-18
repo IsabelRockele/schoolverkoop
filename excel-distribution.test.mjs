@@ -18,3 +18,18 @@ test('empty class has zero totals for all nine variants', () => {
   assert.deepEqual(students,[]); const totals=deliveryTotals(students);
   assert.equal(Object.keys(totals.counts).length,9); assert.equal(totals.total,0);
 });
+test('reversed full name combines buyers in one pupil, within the same class only', () => {
+  const rows=[order(2,'Symons Yliana','L3'),order(3,'Yliana symons','L3'),order(4,'Yliana Symons','L4'),order(5,'Yliana Simons','L3')];
+  const students=studentsFor(rows,'L3');
+  assert.equal(students.length,2);
+  const combined=students.find(s=>s.orderCount===2);
+  assert.ok(combined);assert.equal(combined.total,6);
+  assert.deepEqual(combined.orders.map(o=>o.row),[2,3]);
+  assert.equal(studentsFor(rows,'L4').length,1);
+});
+test('explicit spelling correction combines delivery sheets without changing original names', () => {
+  const rows=[order(2,'Voorbeeld Anna','L3'),order(3,'Anna Voorbeel','L3')];
+  rows[1].deliveryStudent='Voorbeeld Anna';
+  const students=studentsFor(rows,'L3');assert.equal(students.length,1);
+  assert.equal(students[0].total,6);assert.equal(rows[1].student,'Anna Voorbeel');
+});
