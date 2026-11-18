@@ -45,3 +45,10 @@ details{margin:12px 0}
 #suppliers h3{margin:12px 0 8px}
 #suppliers .hint{margin:6px 0 14px}
 @media(max-width:700px){.supplier-invoice{flex-direction:column}}
+.metrics{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:20px;align-items:stretch}
+.metric{padding:20px 16px}
+.profit-metric{background:#d5e7db}
+.profit-metric small{display:block;font-size:.76rem;line-height:1.45;font-weight:400;margin-top:10px;color:#3c5c4c}
+.profit-inputs input{width:260px;max-width:100%}
+@media(max-width:1000px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.profit-metric{grid-column:1/-1}.profit-inputs input{width:100%}}

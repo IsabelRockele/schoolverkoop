@@ -7,17 +7,17 @@ test('existing euro prices convert to cents, missing prices remain unknown', () 
   assert.equal(data.settings.kerstrozen_wit.cost,235);
   assert.equal(data.settings.truffels_250_wit.cost,0);
   assert.equal(data.settings.kerstrozen_rood.cost,null);
-  assert.equal(data.fees,''); // Old per-order fee must never become a total fee.
   assert.equal(data.transport,'15.00');
-  assert.equal(data.mollieMode,'total');
   assert.equal(data.mollieTotal,''); // Do not reuse the old per-payment rate as an invoice.
 });
 test('Mollie invoice survives saving; legacy combined cost is not counted twice', () => {
   const settings=decodePrices({}).settings;
   const encoded=encodePrices(settings,{fees:0,transport:0,mollieSettings:{mode:'total',total:2530}});
   assert.equal(decodePrices(encoded).mollieTotal,'25.30');
-  assert.equal(decodePrices(encoded).mollieMode,'total');
-  assert.equal(decodePrices({excelKosten:{fees:25.30}}).mollieMode,'included');
+  assert.equal(decodePrices({excelKosten:{fees:25.30}}).legacyFees,'25.30');
+  assert.equal(decodePrices({excelKosten:{fees:25.30}}).mollieTotal,'');
+  assert.equal(decodePrices({excelKosten:{mollie:{mode:'estimate',total:25.30}}}).mollieTotal,'');
+  assert.equal(decodePrices({excelKosten:{mollie:{mode:'total',total:0}}}).mollieTotal,'0.00');
 });
 test('legacy prices load for matching year only and saved years stay separate', () => {
   const s = storage(); s.setItem('winst_kerstverkoop_2026_inkoopprijzen',JSON.stringify({kerstrozen_wit:2.35}));

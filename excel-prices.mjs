@@ -14,10 +14,9 @@ export function decodePrices(data = {}) {
   }
   const euroValue = value => value == null || value === '' ? '' : (money(value) / 100).toFixed(2);
   const savedMollie=data.excelKosten?.mollie;
-  const mode=savedMollie?.mode ?? (data.excelKosten?.fees != null ? 'included' : 'total');
-  if (!['included','total','estimate'].includes(mode)) throw Error('Ongeldige Mollie-instelling.');
-  return {settings, fees:euroValue(data.excelKosten?.fees), transport:euroValue(data.excelKosten ? data.excelKosten.transport : data.transportKost),
-    mollieMode:mode,mollieTotal:euroValue(savedMollie?.total),mollieRate:euroValue(savedMollie ? savedMollie.rate : data.mollieKost ?? .39)};
+  return {settings, transport:euroValue(data.excelKosten ? data.excelKosten.transport : data.transportKost),
+    mollieTotal:euroValue(savedMollie?.mode==='total' ? savedMollie.total : null),
+    legacyFees:euroValue(data.excelKosten?.fees)};
 }
 export function encodePrices(settings, costs) {
   const inkoopprijzen = {}, excelVerpakking = {};
@@ -27,7 +26,7 @@ export function encodePrices(settings, costs) {
     inkoopprijzen[p.key] = item.cost == null ? null : item.cost / 100;
     excelVerpakking[p.key] = item.pack;
   }
-  return {inkoopprijzen, excelVerpakking, excelKosten:{fees:costs.fees == null ? null : costs.fees / 100, transport:costs.transport == null ? null : costs.transport / 100,
+  return {inkoopprijzen, excelVerpakking, excelKosten:{fees:0, transport:costs.transport == null ? null : costs.transport / 100,
     ...(costs.mollieSettings ? {mollie:{mode:costs.mollieSettings.mode,total:costs.mollieSettings.total==null ? null : costs.mollieSettings.total/100,rate:costs.mollieSettings.rate==null ? null : costs.mollieSettings.rate/100}} : {})}};
 }
 export function cachedPrices(storage, year) {

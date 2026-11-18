@@ -1,7 +1,7 @@
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
-import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs?v=20261118-mollie';
+import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs?v=20261118-eenvoudig';
 import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs?v=20261118-kopers';
-import { profitDetails } from './excel-profit.mjs?v=20261118-mollie';
+import { profitDetails } from './excel-profit.mjs?v=20261118-eenvoudig';
 import { supplierSections, supplierTotal, supplierRows as supplierTableRows, supplierTotalRow, SUPPLIER_HEADERS, downloadSupplierPdf } from './excel-suppliers.mjs';
 const $ = id => document.getElementById(id);
 const euro = cents => cents == null ? 'Nog in te vullen' : new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
@@ -27,7 +27,7 @@ function reset() {
   $('review').hidden = true;
   enableReports(false); showPanel('bestand');
   $('confirm').checked = false;
-  for (const id of ['issues', 'mapping', 'preview', 'suppliers', 'classList', 'metrics', 'profit', 'profitProducts']) $(id).replaceChildren();
+  for (const id of ['issues', 'mapping', 'preview', 'suppliers', 'classList', 'metrics', 'profitProducts']) $(id).replaceChildren();
   $('status').textContent = 'Nog geen bestand ingelezen.';
   $('fileSummary').textContent = 'Nog geen bestand';
 }
@@ -83,15 +83,14 @@ function priceChanged() {
   refresh();
 }
 $('settings').addEventListener('input', priceChanged);
-$('fees').addEventListener('input', priceChanged);
 $('transport').addEventListener('input', priceChanged);
-for (const id of ['mollieMode','mollieTotal','mollieRate']) $(id).addEventListener('input',priceChanged);
+$('mollieTotal').addEventListener('input',priceChanged);
 function applyPrices(data) {
   const decoded = decodePrices(data);
   settings = decoded.settings;
-  $('fees').value = decoded.fees; $('transport').value = decoded.transport;
-  $('mollieMode').value=decoded.mollieMode; $('mollieTotal').value=decoded.mollieTotal;
-  $('mollieRate').value=decoded.mollieRate;
+  $('transport').value = decoded.transport; $('mollieTotal').value=decoded.mollieTotal;
+  $('legacyCostNotice').hidden=!decoded.legacyFees || money(decoded.legacyFees)===0;
+  $('legacyCostNotice').textContent=`Eerder ingevulde overige/gecombineerde kosten: ${decoded.legacyFees} euro. Deze worden niet meer apart afgetrokken. Controleer welke bedragen bij Factuur Mollie en Transportkosten horen.`;
   renderSettings(); refresh();
 }
 async function timeout(promise) {
@@ -150,6 +149,11 @@ $('savePrices').onclick = async () => {
   }
   $('savePrices').disabled = false; $('loadPrices').disabled = false;
 };
+$('saveCosts').onclick = async () => {
+  $('saveCosts').disabled=true;
+  try { await $('savePrices').onclick(); $('legacyCostNotice').hidden=false; $('legacyCostNotice').textContent=$('priceStatus').textContent; }
+  finally { $('saveCosts').disabled=false; }
+};
 function refresh() {
   validPrices = false;
   try {
@@ -165,31 +169,27 @@ function refresh() {
     });
     settings = next;
     costs = {};
-    for (const id of ['fees', 'transport']) {
+    for (const id of ['transport', 'mollieTotal']) {
       try { costs[id] = $(id).value.trim() === '' ? null : money($(id).value); }
-      catch { throw Error(`Controleer ${id === 'fees' ? 'betaal- en overige kosten' : 'transportkosten'}.`); }
+      catch { throw Error(`Controleer ${id === 'mollieTotal' ? 'de Mollie-factuur' : 'de transportkosten'}.`); }
     }
-    const mode=$('mollieMode').value;
-    $('mollieTotalLabel').hidden=mode!=='total';
-    $('mollieRateLabel').hidden=mode!=='estimate';
-    $('feesLabel').textContent=mode==='included' ? 'Betaal- en overige kosten totaal, inclusief Mollie (€)' : 'Overige kosten totaal, zonder Mollie (€)';
-    const readMollie=id => $(id).value.trim()==='' ? null : money($(id).value);
-    const total=readMollie('mollieTotal'),rate=readMollie('mollieRate');
+    const total=costs.mollieTotal, rate=39, mode=total==null ? 'estimate' : 'total';
     costs.mollieSettings={mode,total,rate};
-    costs.mollie=mode==='included' ? 0 : mode==='estimate' ? rate==null || !result ? null : rate*result.orders.length : total;
-    $('mollieCalculation').textContent=mode==='included' ? 'Mollie wordt niet nog eens afgetrokken. Wil je de factuur afzonderlijk invoeren? Haal dat bedrag dan eerst uit het bestaande kostentotaal.' : mode==='estimate' ? `Schatting: ${result?.orders.length ?? 0} bestellingen × ${euro(rate)} = ${euro(costs.mollie)}. Aanname: één geslaagde betaling per bestelling. Excel bevat geen betaalstatus. Mogelijke dubbele bestellingen tellen mee. Vervang de schatting later door het factuurbedrag.` : `Mollie-factuur: ${euro(costs.mollie)}. Vul de totale onkosten van Mollie voor deze verkoop in. Dit bedrag wordt één keer van de winst afgetrokken.`;
+    costs.mollie=total ?? (result ? rate*result.orders.length : null);
+    $('profitError').hidden=true;
     validPrices = true;
     if (!result || result.errors.length || !$('confirm').checked) return;
     summary = summarize(result.orders, settings);
-    $('metrics').innerHTML = [['Bestellingen', result.orders.length], ['Omzet volgens Excel', euro(summary.revenue)], ['Waarvan giften', euro(summary.gifts)], ['Verkochte stuks', summary.products.reduce((s,p) => s + p.sold, 0)]].map(([label, value]) => `<div class="metric">${escape(label)}<strong>${escape(value)}</strong></div>`).join('');
     const details = profitDetails(summary,costs), profit = details.value;
-    $('profit').textContent = `${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}. Omzet ${euro(summary.revenue)} − bekende inkoopkosten ${euro(details.knownCost)} − ${mode==='included' ? 'betaal- en overige kosten (incl. Mollie)' : 'overige kosten'} ${euro(costs.fees)}${mode==='included' ? '' : ` − Mollie ${euro(costs.mollie)}`} − transport ${euro(costs.transport)}.`;
+    const note=[mode==='estimate' ? `Met geschatte Mollie-kosten: ${result.orders.length} × € 0,39 = ${euro(costs.mollie)}.` : `Mollie-factuur: ${euro(costs.mollie)}.`, costs.transport==null ? 'Zonder transportkosten (nog niet ingevuld).' : `Transport: ${euro(costs.transport)}.`, details.excluded.some(v => v.startsWith('inkoop ')) ? `Zonder ontbrekende inkoopprijzen: ${details.excluded.filter(v => v.startsWith('inkoop ')).map(v => v.slice(7)).join(', ')}.` : ''].filter(Boolean).join(' ');
+    $('metrics').innerHTML = [['Bestellingen', result.orders.length], ['Omzet volgens Excel', euro(summary.revenue)], ['Waarvan giften', euro(summary.gifts)], ['Verkochte stuks', summary.products.reduce((s,p) => s + p.sold, 0)]].map(([label, value]) => `<div class="metric">${escape(label)}<strong>${escape(value)}</strong></div>`).join('')+`<div class="metric profit-metric" id="profit" aria-live="polite"><span>${details.provisional ? 'Voorlopige' : 'Berekende'} winst</span><strong>${escape(euro(profit))}</strong><small>${escape(note)}</small></div>`;
     renderSupplier();
     $('profitProducts').innerHTML = table(['Product','Verkocht','Besteld','Omzet','Inkoop','Marge'],summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),p.cost == null ? 'Nog in te vullen' : euro(p.revenue-p.cost)]));
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = button.dataset.pdf === 'winst' && profit == null);
   } catch (error) {
     summary = null;
-    $('profit').textContent = error.message;
+    $('profitError').hidden=false; $('profitError').textContent=error.message;
+    if ($('profit')) $('profit').innerHTML='<span>Winst</span><strong>—</strong><small>Controleer de ingevulde bedragen.</small>';
     $('suppliers').replaceChildren();
     $('profitProducts').replaceChildren();
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = true);
@@ -283,7 +283,7 @@ document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = async
   if (supplier === 'winst') {
     const profit = profitValue(); if (profit == null) return;
     const details = profitDetails(summary,costs);
-    pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop inclusief overschot ${euro(details.knownCost)}. ${costs.mollieSettings.mode==='included' ? 'Betaal- en overige kosten inclusief Mollie' : 'Overige kosten'} ${euro(costs.fees)}. Mollie ${costs.mollieSettings.mode==='included' ? 'in kostentotaal inbegrepen' : euro(costs.mollie)}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
+    pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop inclusief overschot ${euro(details.knownCost)}. Mollie ${euro(costs.mollie)}${costs.mollieSettings.mode==='estimate' ? ` (schatting: ${result.orders.length} bestellingen x EUR 0,39)` : ' (factuur)'}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
   } else {
     button.disabled=true;
     try { await downloadSupplierPdf(summary,supplier,activeYear); }
