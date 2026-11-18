@@ -11,6 +11,13 @@ const table = (headers, rows) => `<table><thead><tr>${headers.map(h => `<th>${es
 let workbook, result, filename = '', settings = {}, summary, costs, loadVersion = 0;
 let activeYear = '2026', priceRevision = 0, pricesDirty = false, priceRequest = 0;
 let validPrices = false;
+function showSaveStatus(kind,title,message) {
+  const status=$('savedStatus');
+  status.dataset.state=kind;
+  const heading=document.createElement('strong');heading.textContent=title;
+  const detail=document.createElement('span');detail.textContent=message;
+  status.replaceChildren(heading,detail);
+}
 let workbookBytes=null, savingWorkbook=false, savedSelection='';
 function showPanel(name) {
   if(name==='klassen') showClassPanel('classListsPanel');
@@ -51,7 +58,7 @@ function reset() {
   $('status').textContent = 'Nog geen bestand ingelezen.';
   $('fileSummary').textContent = 'Nog geen bestand';
 }
-$('clear').onclick = () => { loadVersion++; reset(); $('file').value = ''; $('savedStatus').textContent='Overzicht gesloten. De gedeeld bewaarde Excel blijft beschikbaar via Laatste Excel openen.'; };
+$('clear').onclick = () => { loadVersion++; reset(); $('file').value = ''; showSaveStatus('info','Overzicht gesloten','De gedeeld bewaarde Excel blijft beschikbaar via Laatste Excel openen.'); };
 $('file').onchange = async () => {
   const file = $('file').files[0], version = ++loadVersion;
   $('file').value = ''; // Allow selecting the same (corrected) export again.
@@ -81,7 +88,7 @@ function parseSheet() {
   result = readOrders(rows);
   // WPForms exports are values. Never trust cached totals in formula cells.
   if (Object.values(sheet).some(cell => cell && typeof cell === 'object' && cell.f)) result.errors.push('Dit werkblad bevat formules. Gebruik de oorspronkelijke WPForms-export met vaste waarden.');
-  $('savedStatus').textContent=result.errors.length ? 'Deze upload is niet bewaard. De vorige bewaarde Excel blijft behouden.' : 'Controleer deze import en vink de controle aan om deze Excel als laatste versie te bewaren.';
+  showSaveStatus(result.errors.length ? 'error' : 'pending',result.errors.length ? 'Excel niet bewaard' : 'Excel nog niet bewaard',result.errors.length ? 'Deze upload bevat fouten. De vorige bewaarde Excel blijft behouden.' : 'Controleer de import en vink de controle aan om deze Excel te bewaren.');
   $('review').hidden = false;
   $('confirm').disabled = result.errors.length > 0;
   $('status').textContent = `${filename} · ${$('sheet').value} · ${rows.slice(1).filter(row => row.some(v => String(v).trim())).length} rijen · ${result.orders.length} gecontroleerde bestellingen.`;
@@ -108,30 +115,30 @@ function fileBusy(busy) {
 async function saveCurrentWorkbook() {
   if(savingWorkbook || !workbookBytes || !result || result.errors.length || !$('confirm').checked)return;
   const selection=`${loadVersion}:${$('sheet').value}`;
-  if(selection===savedSelection){$('savedStatus').textContent='Deze Excel en dit werkblad zijn al gedeeld bewaard.';return;}
-  fileBusy(true);$('savedStatus').textContent='Excel gedeeld bewaren… Sluit deze pagina nog niet.';$('retrySave').hidden=true;
+  if(selection===savedSelection){showSaveStatus('success','✓ Excel bewaard','Deze Excel en dit werkblad zijn al gedeeld bewaard.');return;}
+  fileBusy(true);showSaveStatus('pending','Excel wordt bewaard…','Sluit deze pagina nog niet. Wacht op de groene bevestiging.');$('retrySave').hidden=true;
   try {
     const cloud=await import('./excel-workbook-cloud.mjs');
     const response=await cloud.saveWorkbook({bytes:workbookBytes,name:filename,sheet:$('sheet').value,year:activeYear});
     $('fileLogin').hidden=response.signedIn;
-    if(!response.signedIn){$('savedStatus').textContent='Deze Excel is nog niet bewaard. Meld je aan en lees het bestand opnieuw in om het gedeeld te bewaren.';$('retrySave').hidden=false;return;}
+    if(!response.signedIn){showSaveStatus('error','Excel niet bewaard','Meld je aan en lees het bestand opnieuw in om het gedeeld te bewaren.');$('retrySave').hidden=false;return;}
     savedSelection=selection;
-    $('savedStatus').textContent=`Gedeeld bewaard: ${filename} · ${new Date(response.file.savedAt).toLocaleString('nl-BE')}. ${response.file.cleaned===false ? 'De vorige versie is vervangen, maar het opruimen ervan is nog niet gelukt.' : 'De vorige bewaarde Excel is vervangen.'}`;
-  } catch(error){$('savedStatus').textContent=`Excel bewaren niet bevestigd: ${error.message}. Je kunt met de huidige gegevens verderwerken; probeer bewaren opnieuw.`;$('retrySave').hidden=false;}
+    showSaveStatus('success','✓ Excel bewaard',`Gedeeld bewaard: ${filename} · ${new Date(response.file.savedAt).toLocaleString('nl-BE')}. ${response.file.cleaned===false ? 'De vorige versie is vervangen, maar het opruimen ervan is nog niet gelukt.' : 'Je kunt de pagina veilig sluiten.'}`);
+  } catch(error){showSaveStatus('error','Bewaren niet bevestigd',`Excel bewaren niet bevestigd: ${error.message}. Ga naar Bestand en kies Excel opnieuw bewaren.`);$('retrySave').hidden=false;}
   finally{fileBusy(false);}
 }
 async function restoreWorkbook(automatic=false) {
   if(savingWorkbook || (automatic && workbook))return;
   const version=loadVersion;
   fileBusy(true);
-  $('restoreSaved').disabled=true;$('savedStatus').textContent='Laatste bewaarde Excel ophalen…';
+  $('restoreSaved').disabled=true;showSaveStatus('pending','Laatste Excel ophalen…','De gedeeld bewaarde versie wordt gecontroleerd.');
   try {
     const cloud=await import('./excel-workbook-cloud.mjs');
     const response=await cloud.loadWorkbook();
     if(version!==loadVersion)return;
     $('fileLogin').hidden=response.signedIn;
-    if(!response.signedIn){$('savedStatus').textContent='Meld je aan om de laatste Excel te openen en nieuwe uploads gedeeld te bewaren.';return;}
-    if(!response.file){$('savedStatus').textContent='Er is nog geen Excel gedeeld bewaard. Kies een bestand en bevestig de controle.';return;}
+    if(!response.signedIn){showSaveStatus('pending','Aanmelden om Excel te bewaren','Meld je aan om de laatste Excel te openen en nieuwe uploads gedeeld te bewaren.');return;}
+    if(!response.file){showSaveStatus('info','Nog geen Excel bewaard','Er is nog geen Excel gedeeld bewaard. Kies een bestand en bevestig de controle.');return;}
     const file=response.file;
     const restored=XLSX.read(file.bytes,{type:'array',cellFormula:true});
     if(!restored.Sheets[file.sheet])throw Error('Het bewaarde werkblad ontbreekt.');
@@ -143,8 +150,8 @@ async function restoreWorkbook(automatic=false) {
     fileBusy(true);
     if(file.year && file.year!==activeYear && !pricesDirty){$('priceYear').value=file.year;await loadYear();}
     $('confirm').checked=true;savedSelection=`${loadVersion}:${file.sheet}`;acceptImport(false);
-    $('savedStatus').textContent=`Laatste Excel geopend: ${file.name} · bewaard op ${new Date(file.savedAt).toLocaleString('nl-BE')}. Berekeningen en lijsten gebruiken dit bestand.`;
-  } catch(error){if(version===loadVersion || workbook)$('savedStatus').textContent=`Bewaarde Excel niet geopend: ${error.message}. Je kunt zelf een Excel kiezen of opnieuw proberen.`;}
+    showSaveStatus('success','✓ Bewaarde Excel geopend',`Laatste Excel geopend: ${file.name} · bewaard op ${new Date(file.savedAt).toLocaleString('nl-BE')}. Berekeningen en lijsten gebruiken dit bestand.`);
+  } catch(error){if(version===loadVersion || workbook)showSaveStatus('error','Bewaarde Excel niet geopend',`${error.message}. Je kunt zelf een Excel kiezen of opnieuw proberen.`);}
   finally{fileBusy(false);}
 }
 $('retrySave').onclick=saveCurrentWorkbook;

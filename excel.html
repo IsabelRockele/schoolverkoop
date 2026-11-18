@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css?v=20261118-klastabs">
+  <link rel="stylesheet" href="excel.css?v=20261118-bewaarmelding">
 </head>
 <body>
   <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
@@ -16,7 +16,7 @@
       <button data-tab="prijzen" aria-pressed="false">Prijzen per jaar</button>
     </nav>
     <div class="context-bar"><span id="fileSummary">Nog geen bestand</span><strong id="yearSummary">Verkoopjaar 2026</strong></div>
-    <p id="savedStatus" class="hint" role="status" aria-live="polite">Laatste bewaarde Excel controleren…</p>
+    <div id="savedStatus" class="save-status" data-state="pending" role="status" aria-live="polite" aria-atomic="true"><strong>Laatste Excel controleren…</strong><span>De bewaarmelding verschijnt hier.</span></div>
     <div data-panel="bestand">
       <section class="card">
         <h2>Verkoopbestand openen</h2>
@@ -78,6 +78,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-bewaren"></script>
+  <script type="module" src="excel.js?v=20261118-bewaarmelding"></script>
 </body>
 </html>

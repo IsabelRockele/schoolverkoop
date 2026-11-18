@@ -41,6 +41,9 @@ const http = require('node:http');
     assert.match(await page.locator('#issues').innerText(),/19 en 20/);
     await page.locator('#confirm').check();
     await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Gedeeld bewaard'));
+    assert.equal(await page.locator('#savedStatus').getAttribute('data-state'),'success');
+    assert.equal(await page.locator('#savedStatus strong').innerText(),'✓ Excel bewaard');
+    await page.screenshot({path:path.join(output,'excel-bewaard.png'),fullPage:true});
     await page.reload();
     await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Laatste Excel geopend'));
     assert.match(await page.locator('#fileSummary').innerText(),/26 bestellingen/);
@@ -163,8 +166,8 @@ const http = require('node:http');
     }
     await page.locator('[data-tab="leveranciers"]').click();
     await page.screenshot({path:path.join(output,'desktop.png'),fullPage:true});
-    // Includes one compact, always-visible shared-file status line.
-    assert.ok(await page.evaluate(() => document.documentElement.scrollHeight < 1160));
+    // Includes the explicit shared-file status banner.
+    assert.ok(await page.evaluate(() => document.documentElement.scrollHeight < 1220));
     await page.setViewportSize({width:390,height:844});
     await page.screenshot({path:path.join(output,'mobile.png'),fullPage:true});
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
@@ -190,6 +193,8 @@ const http = require('node:http');
     await page.evaluate(()=>localStorage.setItem('test_save_fail','1'));
     await page.locator('#confirm').check();
     await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('niet bevestigd'));
+    assert.equal(await page.locator('#savedStatus').getAttribute('data-state'),'error');
+    await page.screenshot({path:path.join(output,'bewaren-mislukt.png'),fullPage:true});
     assert.equal(await page.evaluate(()=>localStorage.getItem('test_workbook')),previousSaved);
     await page.evaluate(()=>localStorage.removeItem('test_save_fail'));
     await page.locator('[data-tab="bestand"]').click();await page.locator('#retrySave').click();
