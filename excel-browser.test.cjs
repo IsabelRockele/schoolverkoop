@@ -126,6 +126,22 @@ const http = require('node:http');
     assert.match(await page.locator('#classList').innerText(),/Geen bestellingen/);
     assert.equal(await page.locator('#studentPdf').isDisabled(),true);
     assert.equal(await page.locator('#classStudentsPdf').isDisabled(),true);
+    // Each ZIP contains one PDF per populated class, even while empty AKB is selected.
+    for(const [selector,zipName] of [['#classesZip','klasoverzichten.zip'],['#studentsZip','leerlingbladen.zip']]) {
+      const downloadReady=page.waitForEvent('download');await page.locator(selector).click();
+      await (await downloadReady).saveAs(path.join(output,zipName));
+      const {CFB}=require('./vendor/xlsx.full.min.js');
+      const archive=CFB.read(fs.readFileSync(path.join(output,zipName)),{type:'buffer'});
+      const files=archive.FileIndex.filter(file=>file.name.endsWith('.pdf'));
+      assert.equal(files.length,8);
+      assert.ok(files.some(file=>file.name.endsWith('_K1.pdf')));
+      assert.ok(files.some(file=>file.name.endsWith('_L3.pdf')));
+      assert.ok(!files.some(file=>file.name.endsWith('_AKB.pdf')));
+      for(const file of files)assert.equal(Buffer.from(file.content).subarray(0,5).toString(),'%PDF-');
+      const pupilPdf=files.find(file=>file.name==='leerlingbladen_L3.pdf');
+      if(pupilPdf)assert.equal((Buffer.from(pupilPdf.content).toString().match(/\/Type \/Page\b/g)||[]).length,2);
+      assert.match(await page.locator('#zipStatus').innerText(),/8 PDF/);
+    }
     await page.locator('[data-tab="leveranciers"]').click();
     await page.screenshot({path:path.join(output,'desktop.png'),fullPage:true});
     assert.ok(await page.evaluate(() => document.documentElement.scrollHeight < 1100));

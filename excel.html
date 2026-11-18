@@ -63,6 +63,9 @@
           <p class="hint">Eén PDF voor de gekozen klas. Elke leerling start op een eigen blad met alle kopers in aparte blokken. Bij veel kopers loopt de lijst verder op volgende bladen, telkens met dezelfde leerlingnaam en klas.</p>
           <div class="controls"><label>Kies klas of AKB <select id="studentGroup"></select></label><button id="classStudentsPdf">Download leerlingbladen voor deze klas</button><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button></div>
         </details>
+        <div class="controls"><button id="classesZip">ZIP klasoverzichten</button><button id="studentsZip">ZIP leerlingbladen per klas</button></div>
+        <p class="hint">Elke ZIP bevat een aparte PDF per klas met bestellingen, inclusief AKB als daar bestellingen zijn. Pak de ZIP uit en mail de PDF van de juiste klas naar de leerkracht.</p>
+        <p id="zipStatus" class="hint" role="status" aria-live="polite"></p>
       </section>
     </section>
     <section class="card" data-panel="prijzen" hidden>
@@ -75,6 +78,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-naamvolgorde"></script>
+  <script type="module" src="excel.js?v=20261118-klaszip"></script>
 </body>
 </html>

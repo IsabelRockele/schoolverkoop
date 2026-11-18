@@ -245,7 +245,7 @@ $('mergeStudents').onclick=()=>{
   $('mergeStatus').textContent=`${source.name} is samengevoegd bij ${target.name} in ${target.group}. Alle kopers staan nu bij deze leerling.`;
 };
 // One table renderer for all PDFs: wraps text, repeats headers and paginates.
-function pdfReport(sections, name) {
+function pdfReport(sections, name, download=true) {
   try {
     if (!window.jspdf) throw Error('De PDFbibliotheek kon niet worden geladen.');
     const pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -296,8 +296,9 @@ function pdfReport(sections, name) {
       }
     });
     for (let page = 1; page <= pdf.getNumberOfPages(); page++) { pdf.setPage(page); pdf.setFontSize(8); pdf.text(`${page} / ${pdf.getNumberOfPages()}`, 280, 202, {align:'right'}); }
-    pdf.save(name);
-  } catch (error) { $('status').textContent = `PDF maken mislukt: ${error.message}`; }
+    if(download) pdf.save(name);
+    return pdf;
+  } catch (error) { if(!download) throw error; $('status').textContent = `PDF maken mislukt: ${error.message}`; }
 }
 document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = async () => {
   if (!summary) return;
@@ -326,5 +327,34 @@ function studentSheets(students, name) {
 }
 $('studentPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value).filter(s => s.id===$('student').value),'levering_leerling.pdf');
 $('classStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value),`besteloverzichten_${$('group').value.replace(/[^a-z0-9]/gi,'_')}.pdf`);
+async function downloadClassZip(studentSheets) {
+  const buttons=[$('classesZip'),$('studentsZip')];
+  buttons.forEach(button=>button.disabled=true);
+  $('zipStatus').textContent='PDF’s per klas verzamelen…';
+  try {
+    await new Promise(resolve=>setTimeout(resolve,0));
+    const groups=[...new Set(result.orders.map(order=>order.group))].sort((a,b)=>a.localeCompare(b,'nl',{numeric:true}));
+    if(!groups.length) throw Error('Er zijn geen bestellingen om te downloaden.');
+    if(!window.jspdf || !window.XLSX?.CFB) throw Error('De downloadbibliotheek kon niet worden geladen. Vernieuw de pagina.');
+    const {CFB}=window.XLSX,zip=CFB.utils.cfb_new();
+    const usedNames=new Set();
+    for(const group of groups) {
+      const base=group.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[. ]+$/g,'') || 'klas';
+      let unique=base,suffix=2;
+      while(usedNames.has(unique.toLowerCase())) unique=`${base}_${suffix++}`;
+      usedNames.add(unique.toLowerCase());
+      const pdf=studentSheets ? createStudentPdf(studentsFor(result.orders,group),activeYear,window.jspdf.jsPDF) : pdfReport([classSection(group)],null,false);
+      CFB.utils.cfb_add(zip,`${studentSheets ? 'leerlingbladen' : 'klasoverzicht'}_${unique}.pdf`,new Uint8Array(pdf.output('arraybuffer')));
+    }
+    const bytes=CFB.write(zip,{type:'array',fileType:'zip',compression:true});
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/zip'}));
+    const link=document.createElement('a');link.href=url;link.download=`${studentSheets ? 'leerlingbladen_per_klas' : 'klasoverzichten'}_${activeYear}.zip`;
+    document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+    $('zipStatus').textContent=`ZIP gedownload: ${groups.length} PDF’s, één per klas met bestellingen.`;
+  } catch(error) { $('zipStatus').textContent=`ZIP maken mislukt: ${error.message}`; }
+  finally { buttons.forEach(button=>button.disabled=false); }
+}
+$('classesZip').onclick=()=>downloadClassZip(false);
+$('studentsZip').onclick=()=>downloadClassZip(true);
 try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
 await loadYear();

@@ -20,6 +20,8 @@ Het exportbestand bevat geen betaalstatus: omzet is het bedrag van alle bestelli
 
 ## Controle
 
+Onder Klassen + AKB staan twee ZIP-downloads: **ZIP klasoverzichten** bevat één uitdeellijst-PDF per klas; **ZIP leerlingbladen per klas** bevat één PDF per klas met alle leerlingbladen. Alleen klassen met bestellingen worden opgenomen, inclusief AKB als daar bestellingen zijn. Handmatig samengevoegde leerlingnamen gelden ook voor deze downloads. De ZIP-bestanden worden lokaal samengesteld met de al aanwezige SheetJS-bibliotheek. Pak ze uit om de PDF per klas naar de leerkracht te mailen.
+
 `node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs excel-suppliers.test.mjs excel-student-pdf.test.mjs`
 
 De leerling-PDF start elke leerling op een nieuw blad en zet alle kopers in afzonderlijke producttabellen op dezelfde pagina waar dat past. Vervolgbladen herhalen leerlingnaam, klas en paginanummer binnen die leerling. Er zijn geen invulvelden voor meegeven of controle. De PDF-tests controleren meerdere kopers op één blad, scheiding tussen leerlingen en vervolgpagina's.
