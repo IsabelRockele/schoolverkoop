@@ -56,7 +56,7 @@
         <details class="student-sheets" open>
           <summary>Leveringsblad per leerling</summary>
           <p class="hint">Eén PDF voor de gekozen klas. Elke leerling start op een eigen blad met alle kopers in aparte blokken. Bij veel kopers loopt de lijst verder op volgende bladen, telkens met dezelfde leerlingnaam en klas.</p>
-          <div class="controls"><button id="classStudentsPdf">PDF per leerling van de gekozen klas</button><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button><button id="allStudentsPdf">PDF per leerling · alle klassen</button></div>
+          <div class="controls"><label>Kies klas of AKB <select id="studentGroup"></select></label><button id="classStudentsPdf">Download leerlingbladen voor deze klas</button><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button></div>
         </details>
       </section>
     </section>
@@ -70,6 +70,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-leerlingblokken"></script>
+  <script type="module" src="excel.js?v=20261118-klaskeuze"></script>
 </body>
 </html>

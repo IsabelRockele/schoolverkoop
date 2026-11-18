@@ -73,6 +73,8 @@ $('confirm').onchange = () => {
   if ($('reports').hidden) return;
   const groups = [...new Set([...result.orders.map(o => o.group), 'AKB'])].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
   $('group').replaceChildren(...groups.map(group => new Option(group, group)));
+  $('studentGroup').replaceChildren(...groups.map(group => new Option(group, group)));
+  $('group').value=groups.find(group => result.orders.some(order => order.group===group)) || groups[0];
   refresh(); renderClass(); showPanel('leveranciers');
 };
 function renderSettings() {
@@ -215,14 +217,16 @@ function classData(group) {
   return {headers, rows, totals, students};
 }
 function renderClass() {
+  $('studentGroup').value=$('group').value;
   const data = classData($('group').value);
   const cellClass = i => i===0 ? 'student-name' : i<=9 ? `${DELIVERY_GROUPS[Math.floor((i-1)/3)].style} ${(i-1)%3===0 ? 'group-start' : ''}` : 'delivery-end';
   $('classList').innerHTML = data.students.length ? `<table class="delivery-table"><thead><tr><th rowspan="2" scope="col">Leerling</th>${DELIVERY_GROUPS.map(g => `<th colspan="3" scope="colgroup" class="${g.style} group-start">${g.label}</th>`).join('')}<th rowspan="2" scope="col">Totaal<br>stuks</th><th rowspan="2" scope="col">Meegegeven</th></tr><tr>${DELIVERY_GROUPS.map(g => g.labels.map((label,i) => `<th scope="col" class="${g.style} ${i===0 ? 'group-start' : ''}">${label}</th>`).join('')).join('')}</tr></thead><tbody>${data.rows.slice(0,-1).map(row => `<tr>${row.map((value,i) => `<td class="${cellClass(i)}">${escape(value)}</td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr>${data.rows.at(-1).map((value,i) => `<th class="${i===1 || i===4 || i===7 ? 'group-start' : ''}" ${i===0 ? 'scope="row"' : ''}>${escape(value)}</th>`).join('')}</tr><tr class="group-totals"><th scope="row">Per productgroep</th>${DELIVERY_GROUPS.map((g,i) => `<td colspan="3" class="${g.style} group-start">${data.totals.groups[i]} ${i===0 ? 'kerstrozen' : `doosjes ${i===1 ? '250' : '500'} g`}</td>`).join('')}<td colspan="2">${data.totals.total} stuks samen</td></tr></tfoot></table>` : '<p>Geen bestellingen voor deze groep in dit bestand.</p>';
   $('student').replaceChildren(...data.students.map(s => new Option(s.name,s.id)));
-  $('classStudentsPdf').textContent=`PDF per leerling · ${$('group').value} (${data.students.length} leerlingen)`;
+  $('classStudentsPdf').textContent=`Download PDF voor ${$('group').value} · ${data.students.length} leerlingen`;
   for (const id of ['classPdf','studentPdf','classStudentsPdf']) $(id).disabled = !data.students.length;
 }
 $('group').onchange = renderClass;
+$('studentGroup').onchange = () => { $('group').value=$('studentGroup').value;renderClass(); };
 // One table renderer for all PDFs: wraps text, repeats headers and paginates.
 function pdfReport(sections, name) {
   try {
@@ -305,6 +309,5 @@ function studentSheets(students, name) {
 }
 $('studentPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value).filter(s => s.id===$('student').value),'levering_leerling.pdf');
 $('classStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value),`besteloverzichten_${$('group').value.replace(/[^a-z0-9]/gi,'_')}.pdf`);
-$('allStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders),'leveringsbladen_alle_leerlingen.pdf');
 try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
 await loadYear();

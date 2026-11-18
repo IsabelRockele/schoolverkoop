@@ -94,17 +94,21 @@ const http = require('node:http');
       const download=await pending; await download.saveAs(path.join(output,name));
       assert.ok(fs.statSync(path.join(output,name)).size>1000);
     }
-    await page.locator('#group').selectOption('K1');
+    await page.locator('#studentGroup').selectOption('K1');
+    assert.equal(await page.locator('#group').inputValue(),'K1');
+    assert.equal(await page.locator('#allStudentsPdf').count(),0);
+    assert.match(await page.locator('#classStudentsPdf').innerText(),/K1.*5 leerlingen/);
     assert.equal(await page.locator('#classList tbody tr').count(),5);
     assert.equal(await page.locator('#classList').getByText('Koper',{exact:true}).count(),0);
     assert.match(await page.locator('#classList tfoot').innerText(),/KLASTOTAAL/);
     await page.locator('#student').selectOption({label:'Leonardo'});
-    for (const [selector,name] of [['#studentPdf','leerling.pdf'],['#classStudentsPdf','leerlingen-klas.pdf'],['#allStudentsPdf','leerlingen-alle.pdf']]) {
+    for (const [selector,name] of [['#studentPdf','leerling.pdf'],['#classStudentsPdf','leerlingen-klas.pdf']]) {
       const pending=page.waitForEvent('download'); await page.locator(selector).click();
       await (await pending).saveAs(path.join(output,name));
     }
     await page.screenshot({path:path.join(output,'klas-desktop.png'),fullPage:true});
     await page.locator('#group').selectOption('AKB');
+    assert.equal(await page.locator('#studentGroup').inputValue(),'AKB');
     assert.match(await page.locator('#classList').innerText(),/Geen bestellingen/);
     assert.equal(await page.locator('#studentPdf').isDisabled(),true);
     assert.equal(await page.locator('#classStudentsPdf').isDisabled(),true);
