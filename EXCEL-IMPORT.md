@@ -20,7 +20,9 @@ Het exportbestand bevat geen betaalstatus: omzet is het bedrag van alle bestelli
 
 ## Controle
 
-`node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs excel-suppliers.test.mjs`
+`node --test excel-import.test.mjs excel-prices.test.mjs excel-distribution.test.mjs excel-profit.test.mjs excel-suppliers.test.mjs excel-student-pdf.test.mjs`
+
+De leerling-PDF start elke leerling op een nieuw blad en zet alle kopers in afzonderlijke producttabellen op dezelfde pagina waar dat past. Vervolgbladen herhalen leerlingnaam, klas en paginanummer binnen die leerling. Er zijn geen invulvelden voor meegeven of controle. De PDF-tests controleren meerdere kopers op één blad, scheiding tussen leerlingen en vervolgpagina's.
 
 ## Jaarprijzen en bestaande instellingen
 

@@ -1,3 +1,4 @@
+import { createStudentPdf } from './excel-student-pdf.mjs';
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
 import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs?v=20261118-eenvoudig';
 import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs?v=20261118-kopers';
@@ -298,54 +299,7 @@ function studentSheets(students, name) {
   if (!students.length) return;
   try {
     if (!window.jspdf) throw Error('De PDFbibliotheek kon niet worden geladen.');
-    const pdf = new window.jspdf.jsPDF({unit:'mm',format:'a4'});
-    students.forEach((student,index) => {
-      if (index) pdf.addPage();
-      const buyers=new Map();
-      for (const order of student.orders) {
-        const buyerName=order.buyer.trim() || '(kopernaam ontbreekt)';
-        const key=buyerName.toLocaleLowerCase('nl');
-        if (!buyers.has(key)) buyers.set(key,{name:buyerName,items:new Map(),gift:0,total:0});
-        const buyer=buyers.get(key);buyer.gift+=order.gift;buyer.total+=order.total;
-        for (const item of order.items.filter(i => i.count)) {
-          const itemKey=JSON.stringify([item.key,item.price]);
-          if (!buyer.items.has(itemKey)) buyer.items.set(itemKey,{...item,count:0});
-          buyer.items.get(itemKey).count+=item.count;
-        }
-      }
-      const estimatedLines=[...buyers.values()].reduce((sum,b) => sum+b.items.size+4+(b.gift>0 ? 1 : 0),0);
-      const font=estimatedLines>30 ? 9 : 11, lineHeight=font===9 ? 4.5 : 6;
-      const currency=value => euro(value).replace('€','EUR').replace(/\u00a0/g,' ');
-      let y;
-      function heading(continued=false) {
-        pdf.setTextColor(25,55,47);pdf.setFont('helvetica','bold');pdf.setFontSize(18);
-        pdf.text('Besteloverzicht schoolverkoop',105,24,{align:'center'});
-        pdf.setFont('helvetica','normal');pdf.setFontSize(10);
-        pdf.text(`De Linde | ${activeYear} | ${new Intl.DateTimeFormat('nl-BE',{timeZone:'Europe/Brussels'}).format(new Date())}`,105,33,{align:'center'});
-        pdf.setFont('helvetica','bold');pdf.setFontSize(12);
-        const lines=pdf.splitTextToSize(`Leerling: ${student.name}${continued ? ' (vervolg)' : ''}`,174);
-        pdf.text(lines,18,47);y=47+lines.length*5+4;pdf.text(`Klas: ${student.group}`,18,y);y+=12;
-      }
-      function write(text,bold=false) {
-        pdf.setFont('helvetica',bold ? 'bold' : 'normal');pdf.setFontSize(font);
-        const lines=pdf.splitTextToSize(text,170);
-        if (y+lines.length*lineHeight>253) {pdf.addPage();heading(true);pdf.setFont('helvetica',bold ? 'bold' : 'normal');pdf.setFontSize(font);}
-        pdf.text(lines,20,y);y+=lines.length*lineHeight;
-      }
-      heading();
-      for (const buyer of buyers.values()) {
-        write(`Besteld door: ${buyer.name}`,true);
-        for (const item of buyer.items.values()) write(`${PRODUCTS.find(p => p.key===item.key).label}: ${item.count} x ${currency(item.price)} = ${currency(item.count*item.price)}`);
-        if (buyer.gift) write(`Gift: ${currency(buyer.gift)}`);
-        write(`Subtotaal ${buyer.name}: ${currency(buyer.total)}`,true);y+=5;
-      }
-      write(`Totaal bestellingen: ${currency(student.orders.reduce((sum,o) => sum+o.total,0))}`,true);
-      write(`Totaal mee te geven: ${student.total} stuks`,true);y+=5;
-      write('[  ] Levering gecontroleerd     Meegegeven op: ....................');
-      pdf.setFont('helvetica','normal');pdf.setFontSize(9);
-      pdf.text('Bedragen volgens de bestellingen. Betaalstatus niet beschikbaar in Excel.',18,276);
-      pdf.text('Bedankt voor jullie steun aan onze school!',18,283);
-    });
+    const pdf=createStudentPdf(students,activeYear,window.jspdf.jsPDF);
     pdf.save(name);
   } catch (error) { $('status').textContent=`PDF maken mislukt: ${error.message}`; }
 }
