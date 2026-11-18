@@ -24,7 +24,7 @@ toonWachtwoordKnop.addEventListener("click", () => {
 });
 
 function doelPagina() {
-  const toegestaan = new Set(["school.html", "winst.html"]);
+  const toegestaan = new Set(["school.html", "winst.html", "excel.html"]);
   const gevraagd = new URLSearchParams(location.search).get("terug");
   return toegestaan.has(gevraagd) ? gevraagd : "school.html";
 }

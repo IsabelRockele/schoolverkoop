@@ -1,19 +1,32 @@
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
+import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs';
 const $ = id => document.getElementById(id);
 const euro = cents => cents == null ? 'Nog in te vullen' : new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const table = (headers, rows) => `<table><thead><tr>${headers.map(h => `<th>${escape(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${escape(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 let workbook, result, filename = '', settings = {}, summary, costs, loadVersion = 0;
+let activeYear = '2026', priceRevision = 0, pricesDirty = false, priceRequest = 0;
+let validPrices = false;
+function showPanel(name) {
+  document.querySelectorAll('[data-panel]').forEach(panel => panel.hidden = panel.dataset.panel !== name);
+  document.querySelectorAll('[data-tab]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === name)));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('[data-tab], [data-go]').forEach(button => button.onclick = () => showPanel(button.dataset.tab || button.dataset.go));
+function enableReports(enabled) {
+  $('reports').hidden = !enabled;
+  document.querySelectorAll('[data-needs-orders]').forEach(button => button.disabled = !enabled);
+}
 function reset() {
   workbook = result = summary = null;
   filename = '';
-  settings = {};
-  $('fees').value = $('transport').value = '';
   $('sheet').replaceChildren(); $('sheet').disabled = true;
-  $('review').hidden = $('reports').hidden = true;
+  $('review').hidden = true;
+  enableReports(false); showPanel('bestand');
   $('confirm').checked = false;
-  for (const id of ['issues', 'mapping', 'preview', 'settings', 'suppliers', 'classList', 'metrics', 'profit']) $(id).replaceChildren();
+  for (const id of ['issues', 'mapping', 'preview', 'suppliers', 'classList', 'metrics', 'profit', 'profitProducts']) $(id).replaceChildren();
   $('status').textContent = 'Nog geen bestand ingelezen.';
+  $('fileSummary').textContent = 'Nog geen bestand';
 }
 $('clear').onclick = () => { loadVersion++; reset(); $('file').value = ''; };
 $('file').onchange = async () => {
@@ -37,7 +50,7 @@ $('file').onchange = async () => {
 };
 $('sheet').onchange = parseSheet;
 function parseSheet() {
-  $('confirm').checked = false; $('reports').hidden = true;
+  $('confirm').checked = false; enableReports(false); showPanel('bestand');
   const sheet = workbook.Sheets[$('sheet').value];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: true, raw: true });
   result = readOrders(rows);
@@ -46,22 +59,93 @@ function parseSheet() {
   $('review').hidden = false;
   $('confirm').disabled = result.errors.length > 0;
   $('status').textContent = `${filename} · ${$('sheet').value} · ${rows.slice(1).filter(row => row.some(v => String(v).trim())).length} rijen · ${result.orders.length} gecontroleerde bestellingen.`;
+  $('fileSummary').textContent = `${result.orders.length} bestellingen · ${filename}`;
   $('issues').innerHTML = (result.errors.length ? `<div class="error"><strong>Import geblokkeerd. Corrigeer deze punten in Excel en lees het bestand opnieuw in.</strong><ul>${result.errors.map(e => `<li>${escape(e)}</li>`).join('')}</ul></div>` : '') + (result.warnings.length ? `<div class="warning"><strong>Controle nodig</strong><ul>${result.warnings.map(e => `<li>${escape(e)}</li>`).join('')}</ul></div>` : '');
   $('mapping').innerHTML = table(['Product', 'Stukprijs: Waarde', 'Aantal: Hoeveelheid'], result.mapping.map(p => [p.label, p.priceColumn == null ? 'Ontbreekt' : columnName(p.priceColumn), p.quantityColumn == null ? 'Ontbreekt' : columnName(p.quantityColumn)]));
   $('preview').innerHTML = table(['Excelrij', 'Leerling', 'Klas', 'Producten: aantal × stukprijs', 'Gift', 'Totaal (gecontroleerd)'], result.orders.map(order => [order.row, order.student, order.group, order.items.filter(i => i.count).map(i => `${PRODUCTS.find(p => p.key === i.key).label}: ${i.count} × ${euro(i.price)}`).join('; '), euro(order.gift), euro(order.total)]));
 }
 $('confirm').onchange = () => {
-  $('reports').hidden = !$('confirm').checked || !!result.errors.length;
+  enableReports($('confirm').checked && !result.errors.length);
   if ($('reports').hidden) return;
-  $('settings').innerHTML = `<table><thead><tr><th>Product</th><th>Inkoop per stuk / klein doosje (€)</th><th>Stuks per grote doos</th></tr></thead><tbody>${PRODUCTS.map(p => `<tr><td>${escape(p.label)}</td><td><input aria-label="Inkoop ${escape(p.label)}" data-key="${p.key}" data-field="cost" inputmode="decimal" placeholder="Nog invullen" value="${settings[p.key]?.cost == null ? '' : (settings[p.key].cost / 100).toFixed(2)}"></td><td><input aria-label="Doosinhoud ${escape(p.label)}" data-key="${p.key}" data-field="pack" type="number" min="1" step="1" value="${settings[p.key]?.pack ?? p.pack}" ${p.supplier === 'Kerstrozen' ? 'disabled' : ''}></td></tr>`).join('')}</tbody></table>`;
   const groups = [...new Set([...result.orders.map(o => o.group), 'AKB'])].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
   $('group').replaceChildren(...groups.map(group => new Option(group, group)));
-  refresh(); renderClass();
+  refresh(); renderClass(); showPanel('leveranciers');
 };
-$('settings').addEventListener('input', refresh);
-$('fees').addEventListener('input', refresh);
-$('transport').addEventListener('input', refresh);
+function renderSettings() {
+  $('settings').innerHTML = `<table><thead><tr><th>Product</th><th>Inkoop per stuk / klein doosje (€)</th><th>Stuks per grote doos</th></tr></thead><tbody>${PRODUCTS.map(p => `<tr><td>${escape(p.label)}</td><td><input aria-label="Inkoop ${escape(p.label)}" data-key="${p.key}" data-field="cost" inputmode="decimal" placeholder="Nog invullen" value="${settings[p.key]?.cost == null ? '' : (settings[p.key].cost / 100).toFixed(2)}"></td><td><input aria-label="Doosinhoud ${escape(p.label)}" data-key="${p.key}" data-field="pack" type="number" min="1" step="1" value="${settings[p.key]?.pack ?? p.pack}" ${p.supplier === 'Kerstrozen' ? 'disabled' : ''}></td></tr>`).join('')}</tbody></table>`;
+}
+function priceChanged() {
+  pricesDirty = true; priceRevision++;
+  $('priceStatus').textContent = `Wijzigingen voor ${activeYear} nog niet bewaard. Klik op ‘Prijzen en kosten bewaren’.`;
+  refresh();
+}
+$('settings').addEventListener('input', priceChanged);
+$('fees').addEventListener('input', priceChanged);
+$('transport').addEventListener('input', priceChanged);
+function applyPrices(data) {
+  const decoded = decodePrices(data);
+  settings = decoded.settings;
+  $('fees').value = decoded.fees; $('transport').value = decoded.transport;
+  renderSettings(); refresh();
+}
+async function timeout(promise) {
+  let timer;
+  try { return await Promise.race([promise,new Promise((_,reject) => { timer = setTimeout(() => reject(Error('Geen verbinding met gedeelde prijzen.')),8000); })]); }
+  finally { clearTimeout(timer); }
+}
+async function loadYear() {
+  if (pricesDirty) { $('priceStatus').textContent = 'Bewaar eerst je gewijzigde prijzen en kosten voordat je een ander jaar laadt.'; return; }
+  let year;
+  try { year = priceYear($('priceYear').value); }
+  catch (e) { $('priceStatus').textContent = e.message; return; }
+  const request = ++priceRequest, revision = priceRevision;
+  activeYear = year;
+  $('yearSummary').textContent = `Verkoopjaar ${year}`;
+  let source = 'Nog geen inkoopprijzen voor dit jaar', pending = false;
+  try {
+    const cached = cachedPrices(localStorage,year);
+    applyPrices(cached.data); source = cached.source;
+    pending = localStorage.getItem(`excel_${year}_pending`) === '1';
+    localStorage.setItem('excel_verkoopjaar',year);
+  } catch { applyPrices({}); source = 'Lokale prijzen niet beschikbaar'; }
+  $('priceStatus').textContent = `${source} (${year}). Gedeelde prijzen controleren…`;
+  try {
+    const cloud = await timeout(import('./excel-cloud.mjs'));
+    const response = await timeout(cloud.loadPrices(year));
+    if (request !== priceRequest || revision !== priceRevision) return;
+    $('priceLogin').hidden = response.signedIn;
+    if (response.data && !pending) {
+      applyPrices(response.data);
+      try { cachePrices(localStorage,year,response.data); } catch { /* Shared values remain usable. */ }
+      $('priceStatus').textContent = `Bestaande inkoopprijzen voor ${year} geladen uit de gedeelde winstberekening.`;
+    } else {
+      $('priceStatus').textContent = `${source} (${year}). ${pending ? 'Lokale wijzigingen nog niet gedeeld. Bewaar opnieuw om te synchroniseren.' : response.signedIn ? 'Geen gedeelde prijzen voor dit jaar gevonden.' : 'Meld je aan om eerder ingestelde gedeelde prijzen te laden.'}`;
+    }
+  } catch {
+    if (request === priceRequest && revision === priceRevision) $('priceStatus').textContent = `${source} (${year}). Gedeelde prijzen niet bereikbaar; je kunt lokaal verderwerken.`;
+  }
+}
+$('loadPrices').onclick = loadYear;
+$('savePrices').onclick = async () => {
+  refresh();
+  if (!validPrices) { $('priceStatus').textContent = 'Corrigeer eerst de ongeldige prijzen, doosinhoud of kosten.'; return; }
+  if ($('priceYear').value !== activeYear) { $('priceStatus').textContent = `Je bewerkt ${activeYear}. Zet het jaarveld terug op ${activeYear} om deze wijzigingen te bewaren.`; return; }
+  const year = activeYear, revision = priceRevision, data = encodePrices(settings,costs);
+  let local = false;
+  try { cachePrices(localStorage,year,data); localStorage.setItem(`excel_${year}_pending`,'1'); local = true; } catch { /* Try the shared store. */ }
+  $('savePrices').disabled = true; $('loadPrices').disabled = true;
+  $('priceStatus').textContent = `Prijzen en kosten voor ${year} bewaren…`;
+  let shared = false;
+  try { const cloud = await timeout(import('./excel-cloud.mjs')); shared = await timeout(cloud.savePrices(year,data)); } catch { /* Report local-only storage below. */ }
+  if (shared) { try { localStorage.removeItem(`excel_${year}_pending`); } catch {} }
+  if (revision === priceRevision) {
+    pricesDirty = !(local || shared);
+    $('priceStatus').textContent = shared ? `Prijzen en kosten voor ${year} gedeeld bewaard. De bestaande winstberekening gebruikt dezelfde inkoopprijzen.` : local ? `Prijzen en kosten voor ${year} alleen op deze computer bewaard. Meld je aan en bewaar opnieuw om ze te delen.` : 'Bewaren mislukt. Houd deze pagina open en probeer opnieuw.';
+  }
+  $('savePrices').disabled = false; $('loadPrices').disabled = false;
+};
 function refresh() {
+  validPrices = false;
   try {
     const next = {};
     $('settings').querySelectorAll('input').forEach(input => {
@@ -74,24 +158,34 @@ function refresh() {
       } catch { input.setCustomValidity('Vul een geldig bedrag of positief geheel aantal in.'); throw Error(`Controleer ${PRODUCTS.find(p => p.key === key).label}: ${field === 'cost' ? 'inkoopprijs' : 'doosinhoud'}.`); }
     });
     settings = next;
-    summary = summarize(result.orders, settings);
     costs = {};
     for (const id of ['fees', 'transport']) {
       try { costs[id] = $(id).value.trim() === '' ? null : money($(id).value); }
       catch { throw Error(`Controleer ${id === 'fees' ? 'betaal- en overige kosten' : 'transportkosten'}.`); }
     }
+    validPrices = true;
+    if (!result || result.errors.length || !$('confirm').checked) return;
+    summary = summarize(result.orders, settings);
     $('metrics').innerHTML = [['Bestellingen', result.orders.length], ['Omzet volgens Excel', euro(summary.revenue)], ['Waarvan giften', euro(summary.gifts)], ['Verkochte stuks', summary.products.reduce((s,p) => s + p.sold, 0)]].map(([label, value]) => `<div class="metric">${escape(label)}<strong>${escape(value)}</strong></div>`).join('');
     const profit = profitValue();
     $('profit').textContent = profit == null ? 'Winst nog niet volledig: vul de ontbrekende inkoopprijzen en beide kostenvelden in (ook wanneer ze 0 zijn).' : `Berekende winst: ${euro(profit)} = omzet ${euro(summary.revenue)} − inkoop volledige bestelling ${euro(summary.cost)} − overige kosten ${euro(costs.fees)} − transport ${euro(costs.transport)}. Op basis van alle bestellingen in deze export.`;
-    $('suppliers').innerHTML = ['Kerstrozen', 'Truffels'].map(supplier => `<h3>${supplier}</h3>${table(supplierHeaders, supplierRows(supplier))}`).join('');
+    renderSupplier();
+    $('profitProducts').innerHTML = table(['Product','Verkocht','Besteld','Omzet','Inkoop','Marge'],summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),p.cost == null ? 'Nog in te vullen' : euro(p.revenue-p.cost)]));
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = button.dataset.pdf === 'winst' && profit == null);
   } catch (error) {
     summary = null;
     $('profit').textContent = error.message;
     $('suppliers').replaceChildren();
+    $('profitProducts').replaceChildren();
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = true);
   }
 }
+function renderSupplier() {
+  const supplier = $('supplier').value;
+  $('suppliers').innerHTML = summary ? table(supplierHeaders,supplierRows(supplier)) : '';
+  document.querySelectorAll('[data-pdf="Kerstrozen"], [data-pdf="Truffels"]').forEach(button => button.hidden = button.dataset.pdf !== supplier);
+}
+$('supplier').onchange = renderSupplier;
 function profitValue() { return summary?.cost == null || costs.fees == null || costs.transport == null ? null : summary.revenue - summary.cost - costs.fees - costs.transport; }
 const supplierHeaders = ['Product', 'Verkocht', 'Stuks/doos', 'Grote dozen', 'Bestellen (stuks)', 'Overschot', 'Inkoop/stuk', 'Inkooptotaal'];
 function supplierRows(supplier) { return summary.products.filter(p => p.supplier === supplier).map(p => [p.label, p.sold, p.pack, supplier === 'Truffels' ? p.boxes : '—', p.ordered, p.surplus, euro(p.unitCost), euro(p.cost)]); }
@@ -129,7 +223,7 @@ function pdfReport(sections, name) {
       function pageHeader() {
         pdf.setTextColor(25,55,47); pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.text(text(section.title),left,15);
         pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
-        const notes = pdf.splitTextToSize(text(`De Linde | ${filename} | ${$('sheet').value}\n${section.note || ''}`),width);
+        const notes = pdf.splitTextToSize(text(`De Linde | Verkoopjaar ${activeYear} | ${filename} | ${$('sheet').value}\n${section.note || ''}`),width);
         pdf.text(notes,left,22); y = 25 + notes.length * 3.5;
         row(section.headers,true);
       }
@@ -155,3 +249,5 @@ document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = () =>
 function classSection(group) { return { title:`Uitdeellijst - ${group}`, classroom:true, note:'Aantallen per bestelling. Vink af bij het meegeven.', ...classData(group) }; }
 $('classPdf').onclick = () => pdfReport([classSection($('group').value)], `klas_${$('group').value.replace(/[^a-z0-9]/gi,'_')}.pdf`);
 $('allClassesPdf').onclick = () => pdfReport([...$('group').options].map(o => classSection(o.value)).map(section => section.rows.length ? section : {...section, rows:[section.headers.map((_,i) => i === 1 ? 'Geen bestellingen' : '')]}), 'alle_klassen_en_AKB.pdf');
+try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
+await loadYear();

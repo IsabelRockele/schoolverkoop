@@ -3,48 +3,67 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css">
+  <link rel="stylesheet" href="excel.css?v=20261118-tabs">
 </head>
 <body>
-  <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1><p>Leveranciers bestellen, klassen verdelen en de opbrengst berekenen.</p></div><a href="school.html">Naar schooloverzicht</a></header>
+  <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
   <main>
-    <section class="card">
-      <h2>1. Verkoopbestand openen</h2>
-      <p>Open de volledige WPForms-export (.xlsx). Het bestand wordt uitsluitend in deze browser verwerkt. Bestellingen worden niet opgeslagen of doorgestuurd. Een nieuw bestand vervangt het vorige overzicht.</p>
-      <div class="controls"><label class="file-label">Kies Excelbestand <input id="file" type="file" accept=".xlsx"></label><label>Werkblad <select id="sheet" disabled></select></label><button id="clear" type="button">Gegevens wissen</button></div>
-      <p id="status" role="status" aria-live="polite">Nog geen bestand ingelezen.</p>
-      <div id="issues" role="alert"></div>
-    </section>
-    <section id="review" class="card" hidden>
-      <h2>2. Controleer prijs en aantal</h2>
-      <p><strong>Waarde = verkoopprijs per stuk. Hoeveelheid = aantal.</strong> Een ingevulde prijs bij aantal nul telt niet mee. Per rij controleren we: prijs × aantal + gift = Totaal.</p>
-      <details><summary>Bekijk de gekoppelde Excelkolommen</summary><div id="mapping" class="scroll"></div></details>
-      <div id="preview" class="scroll"></div>
-      <p>Het Excelbestand bevat geen betaalstatus. Deze overzichten tellen alle ingelezen bestellingen mee; omzet is geen bevestiging van ontvangen betalingen.</p>
-      <label class="confirm"><input type="checkbox" id="confirm"> Ik heb de kolommen, bestellingen en eventuele meldingen gecontroleerd.</label>
-    </section>
-    <section id="reports" hidden>
-      <div class="metrics" id="metrics"></div>
+    <nav class="tabs" aria-label="Exceloverzichten">
+      <button data-tab="bestand" aria-pressed="true">Bestand</button>
+      <button data-tab="leveranciers" data-needs-orders disabled aria-pressed="false">Leveranciers</button>
+      <button data-tab="winst" data-needs-orders disabled aria-pressed="false">Winst</button>
+      <button data-tab="klassen" data-needs-orders disabled aria-pressed="false">Klassen + AKB</button>
+      <button data-tab="prijzen" aria-pressed="false">Prijzen per jaar</button>
+    </nav>
+    <div class="context-bar"><span id="fileSummary">Nog geen bestand</span><strong id="yearSummary">Verkoopjaar 2026</strong></div>
+    <div data-panel="bestand">
       <section class="card">
-        <h2>3. Leveranciers en winst</h2>
-        <p>Inkoopprijs per <strong>klein doosje</strong> truffels of per kerstroos. Volle grote dozen worden per smaak en gewicht naar boven afgerond. Controleer de doosinhoud bij de leverancier.</p>
-        <div id="settings" class="scroll"></div>
-        <div class="controls"><label>Betaal- en overige kosten totaal (€)<input id="fees" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><label>Transportkosten totaal (€)<input id="transport" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label></div>
-        <p class="hint">Prijzen en kosten blijven alleen tijdens deze sessie beschikbaar. Vul de werkelijke kosten van de verkoop in.</p>
-        <p id="profit" class="profit" aria-live="polite"></p>
-        <div class="controls"><button data-pdf="Kerstrozen">PDF leverancier kerstrozen</button><button data-pdf="Truffels">PDF leverancier truffels</button><button data-pdf="winst">PDF winstberekening</button></div>
+        <h2>Verkoopbestand openen</h2>
+        <p>Open de volledige WPForms-export. Bestellingen blijven in deze browser. Een nieuw bestand vervangt het vorige overzicht.</p>
+        <div class="controls"><label class="file-label">Kies Excelbestand <input id="file" type="file" accept=".xlsx"></label><label>Werkblad <select id="sheet" disabled></select></label><button id="clear" type="button">Bestellingen wissen</button></div>
+        <p id="status" role="status" aria-live="polite">Nog geen bestand ingelezen.</p>
+        <div id="issues" role="alert"></div>
+      </section>
+      <section id="review" class="card" hidden>
+        <h2>Controleer de import</h2>
+        <p><strong>Waarde = stukprijs. Hoeveelheid = aantal.</strong> Per rij controleren we prijs × aantal + gift = Totaal.</p>
+        <details><summary>Gekoppelde Excelkolommen</summary><div id="mapping" class="scroll"></div></details>
+        <details><summary>Bestellingen bekijken</summary><div id="preview" class="scroll"></div></details>
+        <p class="hint">Alle bestellingen tellen mee. Het bestand bevat geen betaalstatus.</p>
+        <label class="confirm"><input type="checkbox" id="confirm"> Ik heb de import en eventuele meldingen gecontroleerd.</label>
+      </section>
+    </div>
+    <section id="reports" hidden>
+      <section class="card" data-panel="leveranciers" hidden>
+        <div class="panel-heading"><h2>Bestellen bij de leverancier</h2><button data-go="prijzen" class="secondary">Inkoopprijzen aanpassen</button></div>
+        <div class="controls"><label>Leverancier <select id="supplier"><option>Kerstrozen</option><option>Truffels</option></select></label><button data-pdf="Kerstrozen">PDF kerstrozen</button><button data-pdf="Truffels" hidden>PDF truffels</button></div>
+        <p class="hint">Truffels worden per smaak en gewicht naar volle grote dozen afgerond. De inkoop omvat het overschot.</p>
         <div id="suppliers" class="scroll"></div>
       </section>
-      <section class="card">
-        <h2>4. Uitdeellijsten voor leerkrachten</h2>
-        <p>Een lijst per klas, met koper en leerling per bestelling. AKB krijgt een eigen lijst. De klasnamen uit Excel blijven behouden.</p>
+      <section class="card" data-panel="winst" hidden>
+        <div class="panel-heading"><h2>Winstberekening</h2><button data-pdf="winst">PDF winstberekening</button></div>
+        <div class="metrics" id="metrics"></div>
+        <p id="profit" class="profit" aria-live="polite"></p>
+        <div class="controls"><label>Betaal- en overige kosten totaal (€)<input id="fees" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><label>Transportkosten totaal (€)<input id="transport" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><button data-go="prijzen" class="secondary">Inkoopprijzen en bewaren</button></div>
+        <div id="profitProducts" class="scroll"></div>
+        <p class="hint">Omzet volgens de export; ontvangen betalingen zijn niet bevestigd. Bewaar kosten via ‘Prijzen per jaar’.</p>
+      </section>
+      <section class="card" data-panel="klassen" hidden>
+        <h2>Uitdeellijsten</h2>
         <div class="controls"><label>Klas of AKB <select id="group"></select></label><button id="classPdf">PDF geselecteerde klas</button><button id="allClassesPdf">PDF alle klassen + AKB</button></div>
         <div id="classList" class="scroll"></div>
       </section>
     </section>
+    <section class="card" data-panel="prijzen" hidden>
+      <div class="panel-heading"><h2>Inkoopprijzen per verkoopjaar</h2><button id="savePrices">Prijzen en kosten bewaren</button></div>
+      <div class="controls"><label>Verkoopjaar <input id="priceYear" type="number" min="2020" max="2100" value="2026"></label><button id="loadPrices" class="secondary">Jaar laden</button><a id="priceLogin" href="login.html?terug=excel.html" hidden>Aanmelden voor gedeelde prijzen</a></div>
+      <p id="priceStatus" role="status" aria-live="polite">Bestaande inkoopprijzen laden…</p>
+      <p class="hint">Dezelfde inkoopprijzen als in de bestaande winstberekening. Per kerstroos of klein truffeldoosje. Je kunt de prijzen elk jaar wijzigen; andere jaren blijven behouden.</p>
+      <div id="settings" class="scroll"></div>
+    </section>
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js"></script>
+  <script type="module" src="excel.js?v=20261118-tabs"></script>
 </body>
 </html>

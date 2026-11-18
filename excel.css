@@ -5,3 +5,22 @@
 #preview th{position:sticky;top:0}
 .scroll table{min-width:650px}
 .controls label{min-width:0}
+:root{--green:#194e46}
+header{padding-top:20px;padding-bottom:20px}
+.tabs{position:sticky;top:0;z-index:10;display:flex;gap:8px;padding:12px 0;background:#f3f6f2;overflow-x:auto}
+.tabs button{white-space:nowrap;flex-shrink:0;background:white;color:var(--green);border-color:#cedcd2}
+.tabs button[aria-pressed=true]{background:var(--green);color:white;border-color:var(--green)}
+.tabs button:disabled{background:#e9eeea;color:#62766b}
+.context-bar{display:flex;justify-content:space-between;gap:20px;color:#50675c;font-size:.83rem;margin:4px 0 20px}
+.context-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.context-bar strong{white-space:nowrap}
+.panel-heading{display:flex;justify-content:space-between;align-items:center;gap:15px}
+.panel-heading h2{margin:0}
+.secondary{background:white;color:var(--green)}
+.secondary:hover{background:#e2ece2}
+#priceYear{width:120px}
+#priceStatus{padding:12px 16px;background:#edf3ef;border-radius:8px}
+details{margin:12px 0}
+#settings th,#settings td{padding:8px 10px}
+#settings input{padding:6px}
+@media(max-width:700px){.panel-heading{align-items:start;flex-direction:column}.context-bar{gap:10px}.tabs{margin:0 -4px}.metrics{gap:8px}.metric{padding:14px}}
