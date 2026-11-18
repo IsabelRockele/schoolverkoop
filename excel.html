@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Excel verwerken – Schoolverkoop De Linde</title>
-  <link rel="stylesheet" href="excel.css?v=20261118-leveranciers">
+  <link rel="stylesheet" href="excel.css?v=20261118-factuur">
 </head>
 <body>
   <header><div><p class="eyebrow">DE LINDE · SECRETARIAAT</p><h1>Bestellingen uit Excel</h1></div><a href="school.html">Naar schooloverzicht</a></header>
@@ -43,7 +43,9 @@
         <div class="panel-heading"><h2>Winstberekening</h2><button data-pdf="winst">PDF winstberekening</button></div>
         <div class="metrics" id="metrics"></div>
         <p id="profit" class="profit" aria-live="polite"></p>
-        <div class="controls"><label>Betaal- en overige kosten totaal (€)<input id="fees" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><label>Transportkosten totaal (€)<input id="transport" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><button data-go="prijzen" class="secondary">Inkoopprijzen en bewaren</button></div>
+        <div class="controls"><label>Mollie-kosten <select id="mollieMode"><option value="total">Werkelijk bedrag van de factuur</option><option value="estimate">Schatting op basis van bestellingen</option><option value="included">Zitten al in bestaand kostentotaal</option></select></label><label id="mollieTotalLabel">Mollie-factuur: totale onkosten (€)<input id="mollieTotal" inputmode="decimal" placeholder="Totaal van de factuur"></label><label id="mollieRateLabel" hidden>Geschatte kost per betaling (€)<input id="mollieRate" inputmode="decimal" value="0,39"></label></div>
+        <p id="mollieCalculation" class="hint"></p>
+        <div class="controls"><label><span id="feesLabel">Overige kosten totaal, zonder Mollie (€)</span><input id="fees" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><label>Transportkosten totaal (€)<input id="transport" inputmode="decimal" placeholder="Vul ook 0 expliciet in"></label><button data-go="prijzen" class="secondary">Inkoopprijzen en bewaren</button></div>
         <div id="profitProducts" class="scroll"></div>
         <p class="hint">Ontbrekende kosten staan tussen haakjes bij de voorlopige winst. Vul 0 in als een kost zeker niet van toepassing is. Omzet volgens de export; ontvangen betalingen zijn niet bevestigd. Bewaar kosten via ‘Prijzen per jaar’.</p>
       </section>
@@ -54,8 +56,8 @@
         <div id="classList" class="scroll"></div>
         <details class="student-sheets" open>
           <summary>Leveringsblad per leerling</summary>
-          <p class="hint">Eén A4 per leerling, met de naam, klas en alle bestelde producten. Om bij de levering mee te geven.</p>
-          <div class="controls"><label>Leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button><button id="classStudentsPdf">PDF per leerling · deze klas</button><button id="allStudentsPdf">PDF per leerling · alle klassen</button></div>
+          <p class="hint">Eén PDF voor de gekozen klas. Elke leerling start op een eigen blad, met het detail per koper zoals in de oorspronkelijke tool.</p>
+          <div class="controls"><button id="classStudentsPdf">PDF per leerling van de gekozen klas</button><label>Of één leerling <select id="student"></select></label><button id="studentPdf">PDF deze leerling</button><button id="allStudentsPdf">PDF per leerling · alle klassen</button></div>
         </details>
       </section>
     </section>
@@ -69,6 +71,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-leveranciers"></script>
+  <script type="module" src="excel.js?v=20261118-factuur"></script>
 </body>
 </html>

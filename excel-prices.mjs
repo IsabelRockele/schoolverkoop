@@ -13,7 +13,11 @@ export function decodePrices(data = {}) {
     settings[p.key] = {cost:value == null || value === '' ? null : money(value), pack:p.supplier === 'Kerstrozen' ? 1 : pack};
   }
   const euroValue = value => value == null || value === '' ? '' : (money(value) / 100).toFixed(2);
-  return {settings, fees:euroValue(data.excelKosten?.fees), transport:euroValue(data.excelKosten ? data.excelKosten.transport : data.transportKost)};
+  const savedMollie=data.excelKosten?.mollie;
+  const mode=savedMollie?.mode ?? (data.excelKosten?.fees != null ? 'included' : 'total');
+  if (!['included','total','estimate'].includes(mode)) throw Error('Ongeldige Mollie-instelling.');
+  return {settings, fees:euroValue(data.excelKosten?.fees), transport:euroValue(data.excelKosten ? data.excelKosten.transport : data.transportKost),
+    mollieMode:mode,mollieTotal:euroValue(savedMollie?.total),mollieRate:euroValue(savedMollie ? savedMollie.rate : data.mollieKost ?? .39)};
 }
 export function encodePrices(settings, costs) {
   const inkoopprijzen = {}, excelVerpakking = {};
@@ -23,14 +27,16 @@ export function encodePrices(settings, costs) {
     inkoopprijzen[p.key] = item.cost == null ? null : item.cost / 100;
     excelVerpakking[p.key] = item.pack;
   }
-  return {inkoopprijzen, excelVerpakking, excelKosten:{fees:costs.fees == null ? null : costs.fees / 100, transport:costs.transport == null ? null : costs.transport / 100}};
+  return {inkoopprijzen, excelVerpakking, excelKosten:{fees:costs.fees == null ? null : costs.fees / 100, transport:costs.transport == null ? null : costs.transport / 100,
+    ...(costs.mollieSettings ? {mollie:{mode:costs.mollieSettings.mode,total:costs.mollieSettings.total==null ? null : costs.mollieSettings.total/100,rate:costs.mollieSettings.rate==null ? null : costs.mollieSettings.rate/100}} : {})}};
 }
 export function cachedPrices(storage, year) {
   const id = actionId(year);
   const own = storage.getItem(`excel_${id}_prijzen`);
   if (own) return {data:JSON.parse(own), source:'Excelprijzen bewaard op deze computer'};
   const legacy = storage.getItem(`winst_${id}_inkoopprijzen`);
-  return legacy ? {data:{inkoopprijzen:JSON.parse(legacy)}, source:'Bestaande winstberekening op deze computer'} : {data:{}, source:'Nog geen inkoopprijzen voor dit jaar'};
+  const oldSettings=storage.getItem(`winst_${id}_settings`);
+  return legacy || oldSettings ? {data:{...(oldSettings ? JSON.parse(oldSettings) : {}),inkoopprijzen:legacy ? JSON.parse(legacy) : {}}, source:'Bestaande winstberekening op deze computer'} : {data:{}, source:'Nog geen inkoopprijzen voor dit jaar'};
 }
 export function cachePrices(storage, year, data) {
   const id = actionId(year);

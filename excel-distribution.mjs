@@ -14,9 +14,10 @@ export function studentsFor(orders, group) {
     const name = String(order.student || '').trim().replace(/\s+/g,' ');
     // Missing names cannot be assumed to belong to the same child.
     const id = JSON.stringify([order.group, name ? 'named' : 'missing', name ? normalize(name) : order.row]);
-    if (!students.has(id)) students.set(id,{id,name:name || `Naam ontbreekt (Excelrij ${order.row})`,group:order.group,counts:Object.fromEntries(PRODUCTS.map(p => [p.key,0])),orderCount:0});
+    if (!students.has(id)) students.set(id,{id,name:name || `Naam ontbreekt (Excelrij ${order.row})`,group:order.group,counts:Object.fromEntries(PRODUCTS.map(p => [p.key,0])),orderCount:0,orders:[]});
     const student = students.get(id);
     student.orderCount++;
+    student.orders.push(order);
     for (const item of order.items) student.counts[item.key] += item.count;
   }
   return [...students.values()].map(student => ({...student,total:DELIVERY_KEYS.reduce((sum,key) => sum+student.counts[key],0)}))

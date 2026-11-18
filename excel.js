@@ -1,7 +1,7 @@
 import { PRODUCTS, readOrders, summarize, money, quantity, columnName } from './excel-import.mjs';
-import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs';
-import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs';
-import { profitDetails } from './excel-profit.mjs';
+import { priceYear, decodePrices, encodePrices, cachedPrices, cachePrices } from './excel-prices.mjs?v=20261118-mollie';
+import { DELIVERY_GROUPS, DELIVERY_KEYS, studentsFor, deliveryTotals } from './excel-distribution.mjs?v=20261118-kopers';
+import { profitDetails } from './excel-profit.mjs?v=20261118-mollie';
 import { supplierSections, supplierTotal, supplierRows as supplierTableRows, supplierTotalRow, SUPPLIER_HEADERS, downloadSupplierPdf } from './excel-suppliers.mjs';
 const $ = id => document.getElementById(id);
 const euro = cents => cents == null ? 'Nog in te vullen' : new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
@@ -85,10 +85,13 @@ function priceChanged() {
 $('settings').addEventListener('input', priceChanged);
 $('fees').addEventListener('input', priceChanged);
 $('transport').addEventListener('input', priceChanged);
+for (const id of ['mollieMode','mollieTotal','mollieRate']) $(id).addEventListener('input',priceChanged);
 function applyPrices(data) {
   const decoded = decodePrices(data);
   settings = decoded.settings;
   $('fees').value = decoded.fees; $('transport').value = decoded.transport;
+  $('mollieMode').value=decoded.mollieMode; $('mollieTotal').value=decoded.mollieTotal;
+  $('mollieRate').value=decoded.mollieRate;
   renderSettings(); refresh();
 }
 async function timeout(promise) {
@@ -166,12 +169,21 @@ function refresh() {
       try { costs[id] = $(id).value.trim() === '' ? null : money($(id).value); }
       catch { throw Error(`Controleer ${id === 'fees' ? 'betaal- en overige kosten' : 'transportkosten'}.`); }
     }
+    const mode=$('mollieMode').value;
+    $('mollieTotalLabel').hidden=mode!=='total';
+    $('mollieRateLabel').hidden=mode!=='estimate';
+    $('feesLabel').textContent=mode==='included' ? 'Betaal- en overige kosten totaal, inclusief Mollie (€)' : 'Overige kosten totaal, zonder Mollie (€)';
+    const readMollie=id => $(id).value.trim()==='' ? null : money($(id).value);
+    const total=readMollie('mollieTotal'),rate=readMollie('mollieRate');
+    costs.mollieSettings={mode,total,rate};
+    costs.mollie=mode==='included' ? 0 : mode==='estimate' ? rate==null || !result ? null : rate*result.orders.length : total;
+    $('mollieCalculation').textContent=mode==='included' ? 'Mollie wordt niet nog eens afgetrokken. Wil je de factuur afzonderlijk invoeren? Haal dat bedrag dan eerst uit het bestaande kostentotaal.' : mode==='estimate' ? `Schatting: ${result?.orders.length ?? 0} bestellingen × ${euro(rate)} = ${euro(costs.mollie)}. Aanname: één geslaagde betaling per bestelling. Excel bevat geen betaalstatus. Mogelijke dubbele bestellingen tellen mee. Vervang de schatting later door het factuurbedrag.` : `Mollie-factuur: ${euro(costs.mollie)}. Vul de totale onkosten van Mollie voor deze verkoop in. Dit bedrag wordt één keer van de winst afgetrokken.`;
     validPrices = true;
     if (!result || result.errors.length || !$('confirm').checked) return;
     summary = summarize(result.orders, settings);
     $('metrics').innerHTML = [['Bestellingen', result.orders.length], ['Omzet volgens Excel', euro(summary.revenue)], ['Waarvan giften', euro(summary.gifts)], ['Verkochte stuks', summary.products.reduce((s,p) => s + p.sold, 0)]].map(([label, value]) => `<div class="metric">${escape(label)}<strong>${escape(value)}</strong></div>`).join('');
     const details = profitDetails(summary,costs), profit = details.value;
-    $('profit').textContent = `${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}. Omzet ${euro(summary.revenue)} − ${details.excluded.some(s => s.startsWith('inkoop ')) ? 'bekende inkoopkosten' : 'inkoop volledige bestelling'} ${euro(details.knownCost)} − betaal- en overige kosten ${costs.fees == null ? 'nog niet ingevoerd' : euro(costs.fees)} − transport ${costs.transport == null ? 'nog niet ingevoerd' : euro(costs.transport)}.`;
+    $('profit').textContent = `${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}. Omzet ${euro(summary.revenue)} − bekende inkoopkosten ${euro(details.knownCost)} − ${mode==='included' ? 'betaal- en overige kosten (incl. Mollie)' : 'overige kosten'} ${euro(costs.fees)}${mode==='included' ? '' : ` − Mollie ${euro(costs.mollie)}`} − transport ${euro(costs.transport)}.`;
     renderSupplier();
     $('profitProducts').innerHTML = table(['Product','Verkocht','Besteld','Omzet','Inkoop','Marge'],summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),p.cost == null ? 'Nog in te vullen' : euro(p.revenue-p.cost)]));
     document.querySelectorAll('[data-pdf]').forEach(button => button.disabled = button.dataset.pdf === 'winst' && profit == null);
@@ -206,6 +218,7 @@ function renderClass() {
   const cellClass = i => i===0 ? 'student-name' : i<=9 ? `${DELIVERY_GROUPS[Math.floor((i-1)/3)].style} ${(i-1)%3===0 ? 'group-start' : ''}` : 'delivery-end';
   $('classList').innerHTML = data.students.length ? `<table class="delivery-table"><thead><tr><th rowspan="2" scope="col">Leerling</th>${DELIVERY_GROUPS.map(g => `<th colspan="3" scope="colgroup" class="${g.style} group-start">${g.label}</th>`).join('')}<th rowspan="2" scope="col">Totaal<br>stuks</th><th rowspan="2" scope="col">Meegegeven</th></tr><tr>${DELIVERY_GROUPS.map(g => g.labels.map((label,i) => `<th scope="col" class="${g.style} ${i===0 ? 'group-start' : ''}">${label}</th>`).join('')).join('')}</tr></thead><tbody>${data.rows.slice(0,-1).map(row => `<tr>${row.map((value,i) => `<td class="${cellClass(i)}">${escape(value)}</td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr>${data.rows.at(-1).map((value,i) => `<th class="${i===1 || i===4 || i===7 ? 'group-start' : ''}" ${i===0 ? 'scope="row"' : ''}>${escape(value)}</th>`).join('')}</tr><tr class="group-totals"><th scope="row">Per productgroep</th>${DELIVERY_GROUPS.map((g,i) => `<td colspan="3" class="${g.style} group-start">${data.totals.groups[i]} ${i===0 ? 'kerstrozen' : `doosjes ${i===1 ? '250' : '500'} g`}</td>`).join('')}<td colspan="2">${data.totals.total} stuks samen</td></tr></tfoot></table>` : '<p>Geen bestellingen voor deze groep in dit bestand.</p>';
   $('student').replaceChildren(...data.students.map(s => new Option(s.name,s.id)));
+  $('classStudentsPdf').textContent=`PDF per leerling · ${$('group').value} (${data.students.length} leerlingen)`;
   for (const id of ['classPdf','studentPdf','classStudentsPdf']) $(id).disabled = !data.students.length;
 }
 $('group').onchange = renderClass;
@@ -270,7 +283,7 @@ document.querySelectorAll('[data-pdf]').forEach(button => button.onclick = async
   if (supplier === 'winst') {
     const profit = profitValue(); if (profit == null) return;
     const details = profitDetails(summary,costs);
-    pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Inkoop inclusief overschot. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop ${euro(details.knownCost)}. Betaal- en overige kosten ${euro(costs.fees)}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
+    pdfReport([{ title:details.provisional ? 'Voorlopige winstberekening schoolverkoop' : 'Winstberekening schoolverkoop', note:`${details.provisional ? 'Voorlopige' : 'Berekende'} winst: ${euro(profit)}${details.suffix}.\nAlle bestellingen uit Excel, betaalstatus onbekend. Omzet ${euro(summary.revenue)} (waarvan gift ${euro(summary.gifts)}). Bekende inkoop inclusief overschot ${euro(details.knownCost)}. ${costs.mollieSettings.mode==='included' ? 'Betaal- en overige kosten inclusief Mollie' : 'Overige kosten'} ${euro(costs.fees)}. Mollie ${costs.mollieSettings.mode==='included' ? 'in kostentotaal inbegrepen' : euro(costs.mollie)}. Transport ${euro(costs.transport)}.`, headers:['Product','Verkocht','Besteld','Omzet','Inkoop','Marge voor overige kosten'], rows:summary.products.map(p => [p.label,p.sold,p.ordered,euro(p.revenue),euro(p.cost),`${euro(p.revenue-(p.cost ?? 0))}${p.cost == null ? ' (zonder inkoop)' : ''}`]) }], 'winstberekening.pdf');
   } else {
     button.disabled=true;
     try { await downloadSupplierPdf(summary,supplier,activeYear); }
@@ -288,36 +301,56 @@ function studentSheets(students, name) {
     const pdf = new window.jspdf.jsPDF({unit:'mm',format:'a4'});
     students.forEach((student,index) => {
       if (index) pdf.addPage();
-      pdf.setTextColor(25,55,47); pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
-      pdf.text(`DE LINDE  |  SCHOOLVERKOOP ${activeYear}`,18,18);
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(22); pdf.text('Jouw levering',18,34);
-      pdf.setFontSize(16);
-      const nameLines=pdf.splitTextToSize(student.name,174);
-      pdf.text(nameLines,18,47);
-      let y=51+nameLines.length*6;
-      pdf.setFontSize(12); pdf.text(`Klas: ${student.group}`,18,y); y+=12;
-      DELIVERY_GROUPS.forEach(group => {
-        pdf.setFillColor(...group.color); pdf.rect(18,y,174,10,'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.text(group.label,22,y+7); pdf.text('Aantal',182,y+7,{align:'right'}); y+=10;
-        group.keys.forEach((key,i) => {
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(12); pdf.text(group.labels[i],22,y+7);
-          pdf.setFont('helvetica','bold'); pdf.text(String(student.counts[key] || '-'),182,y+7,{align:'right'});
-          pdf.setDrawColor(220,227,221); pdf.line(18,y+10,192,y+10); y+=10;
-        });
-        y+=5;
-      });
-      pdf.setFillColor(25,78,70); pdf.rect(18,y,174,12,'F'); pdf.setTextColor(255,255,255); pdf.setFontSize(13);
-      pdf.text('Totaal mee te geven',22,y+8); pdf.text(`${student.total} stuks`,182,y+8,{align:'right'}); y+=23;
-      pdf.setTextColor(25,55,47); pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
-      pdf.text('[  ] Levering gecontroleerd',18,y); pdf.text('Meegegeven op: ........................',18,y+10);
-      pdf.setFontSize(10); pdf.text('Bedankt voor jullie steun aan onze school!',18,279);
-      pdf.text(`${index+1} / ${students.length}`,192,279,{align:'right'});
+      const buyers=new Map();
+      for (const order of student.orders) {
+        const buyerName=order.buyer.trim() || '(kopernaam ontbreekt)';
+        const key=buyerName.toLocaleLowerCase('nl');
+        if (!buyers.has(key)) buyers.set(key,{name:buyerName,items:new Map(),gift:0,total:0});
+        const buyer=buyers.get(key);buyer.gift+=order.gift;buyer.total+=order.total;
+        for (const item of order.items.filter(i => i.count)) {
+          const itemKey=JSON.stringify([item.key,item.price]);
+          if (!buyer.items.has(itemKey)) buyer.items.set(itemKey,{...item,count:0});
+          buyer.items.get(itemKey).count+=item.count;
+        }
+      }
+      const estimatedLines=[...buyers.values()].reduce((sum,b) => sum+b.items.size+4+(b.gift>0 ? 1 : 0),0);
+      const font=estimatedLines>30 ? 9 : 11, lineHeight=font===9 ? 4.5 : 6;
+      const currency=value => euro(value).replace('€','EUR').replace(/\u00a0/g,' ');
+      let y;
+      function heading(continued=false) {
+        pdf.setTextColor(25,55,47);pdf.setFont('helvetica','bold');pdf.setFontSize(18);
+        pdf.text('Besteloverzicht schoolverkoop',105,24,{align:'center'});
+        pdf.setFont('helvetica','normal');pdf.setFontSize(10);
+        pdf.text(`De Linde | ${activeYear} | ${new Intl.DateTimeFormat('nl-BE',{timeZone:'Europe/Brussels'}).format(new Date())}`,105,33,{align:'center'});
+        pdf.setFont('helvetica','bold');pdf.setFontSize(12);
+        const lines=pdf.splitTextToSize(`Leerling: ${student.name}${continued ? ' (vervolg)' : ''}`,174);
+        pdf.text(lines,18,47);y=47+lines.length*5+4;pdf.text(`Klas: ${student.group}`,18,y);y+=12;
+      }
+      function write(text,bold=false) {
+        pdf.setFont('helvetica',bold ? 'bold' : 'normal');pdf.setFontSize(font);
+        const lines=pdf.splitTextToSize(text,170);
+        if (y+lines.length*lineHeight>253) {pdf.addPage();heading(true);pdf.setFont('helvetica',bold ? 'bold' : 'normal');pdf.setFontSize(font);}
+        pdf.text(lines,20,y);y+=lines.length*lineHeight;
+      }
+      heading();
+      for (const buyer of buyers.values()) {
+        write(`Besteld door: ${buyer.name}`,true);
+        for (const item of buyer.items.values()) write(`${PRODUCTS.find(p => p.key===item.key).label}: ${item.count} x ${currency(item.price)} = ${currency(item.count*item.price)}`);
+        if (buyer.gift) write(`Gift: ${currency(buyer.gift)}`);
+        write(`Subtotaal ${buyer.name}: ${currency(buyer.total)}`,true);y+=5;
+      }
+      write(`Totaal bestellingen: ${currency(student.orders.reduce((sum,o) => sum+o.total,0))}`,true);
+      write(`Totaal mee te geven: ${student.total} stuks`,true);y+=5;
+      write('[  ] Levering gecontroleerd     Meegegeven op: ....................');
+      pdf.setFont('helvetica','normal');pdf.setFontSize(9);
+      pdf.text('Bedragen volgens de bestellingen. Betaalstatus niet beschikbaar in Excel.',18,276);
+      pdf.text('Bedankt voor jullie steun aan onze school!',18,283);
     });
     pdf.save(name);
   } catch (error) { $('status').textContent=`PDF maken mislukt: ${error.message}`; }
 }
 $('studentPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value).filter(s => s.id===$('student').value),'levering_leerling.pdf');
-$('classStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value),'leveringsbladen_klas.pdf');
+$('classStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders,$('group').value),`besteloverzichten_${$('group').value.replace(/[^a-z0-9]/gi,'_')}.pdf`);
 $('allStudentsPdf').onclick = () => studentSheets(studentsFor(result.orders),'leveringsbladen_alle_leerlingen.pdf');
 try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
 await loadYear();
