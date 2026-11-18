@@ -16,11 +16,13 @@
       <button data-tab="prijzen" aria-pressed="false">Prijzen per jaar</button>
     </nav>
     <div class="context-bar"><span id="fileSummary">Nog geen bestand</span><strong id="yearSummary">Verkoopjaar 2026</strong></div>
+    <p id="savedStatus" class="hint" role="status" aria-live="polite">Laatste bewaarde Excel controleren…</p>
     <div data-panel="bestand">
       <section class="card">
         <h2>Verkoopbestand openen</h2>
-        <p>Open de volledige WPForms-export. Bestellingen blijven in deze browser. Een nieuw bestand vervangt het vorige overzicht.</p>
-        <div class="controls"><label class="file-label">Kies Excelbestand <input id="file" type="file" accept=".xlsx"></label><label>Werkblad <select id="sheet" disabled></select></label><button id="clear" type="button">Bestellingen wissen</button></div>
+        <p>Open de volledige WPForms-export. Na controle wordt de laatste Excel gedeeld bewaard voor aangemelde medewerkers. Een nieuwe gecontroleerde Excel vervangt de vorige; alle berekeningen en lijsten worden opnieuw gemaakt.</p>
+        <div class="controls"><label class="file-label">Kies Excelbestand <input id="file" type="file" accept=".xlsx"></label><label>Werkblad <select id="sheet" disabled></select></label><button id="restoreSaved" type="button">Laatste Excel openen</button><button id="clear" type="button">Overzicht sluiten</button></div>
+        <div class="controls"><a id="fileLogin" href="login.html?terug=excel.html" hidden>Aanmelden om Excel gedeeld te bewaren</a><button id="retrySave" hidden>Excel opnieuw bewaren</button></div>
         <p id="status" role="status" aria-live="polite">Nog geen bestand ingelezen.</p>
         <div id="issues" role="alert"></div>
       </section>
@@ -76,6 +78,6 @@
   </main>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
-  <script type="module" src="excel.js?v=20261118-klastabs"></script>
+  <script type="module" src="excel.js?v=20261118-bewaren"></script>
 </body>
 </html>

@@ -18,6 +18,10 @@ const http = require('node:http');
   const browser = await chromium.launch({channel:'msedge',headless:true});
   try {
     const page = await browser.newPage({viewport:{width:1400,height:1000},acceptDownloads:true});
+    await page.route('**/excel-workbook-cloud.mjs',route=>route.fulfill({contentType:'text/javascript',body:`
+      export async function loadWorkbook(){const data=localStorage.getItem('test_workbook');return {signedIn:true,file:data ? {...JSON.parse(data),bytes:new Uint8Array(JSON.parse(data).bytes)} : null};}
+      export async function saveWorkbook(file){if(localStorage.getItem('test_save_fail'))throw Error('Testverbinding verbroken');const data={...file,bytes:Array.from(new Uint8Array(file.bytes)),savedAt:new Date().toISOString(),cleaned:true};localStorage.setItem('test_workbook',JSON.stringify(data));return {signedIn:true,file:data};}
+    `}));
     // Isolated shared-settings adapter: tests must never write production prices.
     await page.route('**/excel-cloud.mjs', route => route.fulfill({contentType:'text/javascript',body:`
       export async function loadPrices(year) {
@@ -29,12 +33,25 @@ const http = require('node:http');
     const errors=[]; page.on('pageerror',error => errors.push(error.message));
     await page.goto(`http://127.0.0.1:${server.address().port}/excel.html`);
     await page.waitForFunction(() => document.querySelector('#priceStatus').textContent.includes('geladen uit'));
+    await page.waitForFunction(() => document.querySelector('#savedStatus').textContent.includes('nog geen Excel'));
     assert.equal(await page.locator('[data-key="kerstrozen_wit"][data-field="cost"]').inputValue(),'2.35');
     await page.locator('#file').setInputFiles(process.argv[3]);
     await page.waitForFunction(() => document.querySelector('#status').textContent.includes('26 gecontroleerde'));
     assert.equal(await page.locator('.error:visible').count(),0);
     assert.match(await page.locator('#issues').innerText(),/19 en 20/);
     await page.locator('#confirm').check();
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Gedeeld bewaard'));
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Laatste Excel geopend'));
+    assert.match(await page.locator('#fileSummary').innerText(),/26 bestellingen/);
+    // Invalid uploads never replace the shared copy; it can be reopened immediately.
+    await page.locator('[data-tab="bestand"]').click();
+    await page.locator('#file').setInputFiles({name:'fout.xlsx',mimeType:'application/octet-stream',buffer:Buffer.from('geen excel')});
+    await page.waitForFunction(()=>!document.querySelector('#review').hidden || document.querySelector('#status').textContent.includes('Import mislukt'));
+    assert.equal(await page.locator('#reports').isHidden(),true);
+    await page.locator('#restoreSaved').click();
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Laatste Excel geopend'));
+    assert.match(await page.locator('#fileSummary').innerText(),/26 bestellingen/);
     assert.equal(await page.locator('[data-panel="bestand"]').isHidden(),true);
     assert.equal(await page.locator('[data-panel="leveranciers"]').isVisible(),true);
     assert.equal(await page.locator('[data-pdf="winst"]').isDisabled(),false);
@@ -146,7 +163,8 @@ const http = require('node:http');
     }
     await page.locator('[data-tab="leveranciers"]').click();
     await page.screenshot({path:path.join(output,'desktop.png'),fullPage:true});
-    assert.ok(await page.evaluate(() => document.documentElement.scrollHeight < 1100));
+    // Includes one compact, always-visible shared-file status line.
+    assert.ok(await page.evaluate(() => document.documentElement.scrollHeight < 1160));
     await page.setViewportSize({width:390,height:844});
     await page.screenshot({path:path.join(output,'mobile.png'),fullPage:true});
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
@@ -168,7 +186,15 @@ const http = require('node:http');
     const stressBook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(stressBook,XLSX.utils.aoa_to_sheet(stressRows),'Test');
     await page.locator('#file').setInputFiles({name:'paginatest.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(XLSX.write(stressBook,{type:'buffer',bookType:'xlsx'}))});
     await page.waitForFunction(() => document.querySelector('#status').textContent.includes('45 gecontroleerde'));
-    await page.locator('#confirm').check(); await page.locator('[data-tab="klassen"]').click();
+    const previousSaved=await page.evaluate(()=>localStorage.getItem('test_workbook'));
+    await page.evaluate(()=>localStorage.setItem('test_save_fail','1'));
+    await page.locator('#confirm').check();
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('niet bevestigd'));
+    assert.equal(await page.evaluate(()=>localStorage.getItem('test_workbook')),previousSaved);
+    await page.evaluate(()=>localStorage.removeItem('test_save_fail'));
+    await page.locator('[data-tab="bestand"]').click();await page.locator('#retrySave').click();
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Gedeeld bewaard'));
+    await page.locator('[data-tab="klassen"]').click();
     await page.locator('#group').selectOption('TESTKLAS');
     const paginationDownload=page.waitForEvent('download'); await page.locator('#classPdf').click();
     await (await paginationDownload).saveAs(path.join(output,'klas-paginatest.pdf'));
@@ -178,6 +204,8 @@ const http = require('node:http');
     assert.equal(await page.locator('#preview').innerHTML(),'');
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#priceStatus').textContent.includes('geladen uit'));
+    await page.waitForFunction(()=>document.querySelector('#savedStatus').textContent.includes('Laatste Excel geopend'));
+    assert.match(await page.locator('#fileSummary').innerText(),/45 bestellingen/);
     assert.equal(await page.locator('[data-key="kerstrozen_wit"][data-field="cost"]').inputValue(),'2.00');
     assert.equal(await page.locator('#mollieTotal').inputValue(),'0.00');
     assert.deepEqual(errors,[]);

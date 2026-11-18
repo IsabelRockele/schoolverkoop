@@ -11,6 +11,7 @@ const table = (headers, rows) => `<table><thead><tr>${headers.map(h => `<th>${es
 let workbook, result, filename = '', settings = {}, summary, costs, loadVersion = 0;
 let activeYear = '2026', priceRevision = 0, pricesDirty = false, priceRequest = 0;
 let validPrices = false;
+let workbookBytes=null, savingWorkbook=false, savedSelection='';
 function showPanel(name) {
   if(name==='klassen') showClassPanel('classListsPanel');
   document.querySelectorAll('[data-panel]').forEach(panel => panel.hidden = panel.dataset.panel !== name);
@@ -39,6 +40,7 @@ function enableReports(enabled) {
   document.querySelectorAll('[data-needs-orders]').forEach(button => button.disabled = !enabled);
 }
 function reset() {
+  workbookBytes=null;savedSelection='';$('retrySave').hidden=true;
   workbook = result = summary = null;
   filename = '';
   $('sheet').replaceChildren(); $('sheet').disabled = true;
@@ -49,7 +51,7 @@ function reset() {
   $('status').textContent = 'Nog geen bestand ingelezen.';
   $('fileSummary').textContent = 'Nog geen bestand';
 }
-$('clear').onclick = () => { loadVersion++; reset(); $('file').value = ''; };
+$('clear').onclick = () => { loadVersion++; reset(); $('file').value = ''; $('savedStatus').textContent='Overzicht gesloten. De gedeeld bewaarde Excel blijft beschikbaar via Laatste Excel openen.'; };
 $('file').onchange = async () => {
   const file = $('file').files[0], version = ++loadVersion;
   $('file').value = ''; // Allow selecting the same (corrected) export again.
@@ -63,6 +65,7 @@ $('file').onchange = async () => {
     const bytes = await file.arrayBuffer();
     if (version !== loadVersion) return;
     workbook = XLSX.read(bytes, { type: 'array', cellFormula: true });
+    workbookBytes=bytes;
     filename = file.name;
     $('sheet').replaceChildren(...workbook.SheetNames.map(name => new Option(name, name)));
     $('sheet').disabled = false;
@@ -71,12 +74,14 @@ $('file').onchange = async () => {
 };
 $('sheet').onchange = parseSheet;
 function parseSheet() {
+  $('retrySave').hidden=true;
   $('confirm').checked = false; enableReports(false); showPanel('bestand');
   const sheet = workbook.Sheets[$('sheet').value];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: true, raw: true });
   result = readOrders(rows);
   // WPForms exports are values. Never trust cached totals in formula cells.
   if (Object.values(sheet).some(cell => cell && typeof cell === 'object' && cell.f)) result.errors.push('Dit werkblad bevat formules. Gebruik de oorspronkelijke WPForms-export met vaste waarden.');
+  $('savedStatus').textContent=result.errors.length ? 'Deze upload is niet bewaard. De vorige bewaarde Excel blijft behouden.' : 'Controleer deze import en vink de controle aan om deze Excel als laatste versie te bewaren.';
   $('review').hidden = false;
   $('confirm').disabled = result.errors.length > 0;
   $('status').textContent = `${filename} · ${$('sheet').value} · ${rows.slice(1).filter(row => row.some(v => String(v).trim())).length} rijen · ${result.orders.length} gecontroleerde bestellingen.`;
@@ -85,7 +90,8 @@ function parseSheet() {
   $('mapping').innerHTML = table(['Product', 'Stukprijs: Waarde', 'Aantal: Hoeveelheid'], result.mapping.map(p => [p.label, p.priceColumn == null ? 'Ontbreekt' : columnName(p.priceColumn), p.quantityColumn == null ? 'Ontbreekt' : columnName(p.quantityColumn)]));
   $('preview').innerHTML = table(['Excelrij', 'Leerling', 'Klas', 'Producten: aantal × stukprijs', 'Gift', 'Totaal (gecontroleerd)'], result.orders.map(order => [order.row, order.student, order.group, order.items.filter(i => i.count).map(i => `${PRODUCTS.find(p => p.key === i.key).label}: ${i.count} × ${euro(i.price)}`).join('; '), euro(order.gift), euro(order.total)]));
 }
-$('confirm').onchange = () => {
+$('confirm').onchange = () => acceptImport(true);
+function acceptImport(save) {
   enableReports($('confirm').checked && !result.errors.length);
   if ($('reports').hidden) return;
   const groups = [...new Set([...result.orders.map(o => o.group), 'AKB'])].sort((a,b) => a.localeCompare(b, 'nl', {numeric:true}));
@@ -93,7 +99,56 @@ $('confirm').onchange = () => {
   $('studentGroup').replaceChildren(...groups.map(group => new Option(group, group)));
   $('group').value=groups.find(group => result.orders.some(order => order.group===group)) || groups[0];
   refresh(); renderClass(); showPanel('leveranciers');
-};
+  if(save) void saveCurrentWorkbook();
+}
+function fileBusy(busy) {
+  savingWorkbook=busy;
+  for(const id of ['file','sheet','clear','restoreSaved','confirm','retrySave'])$(id).disabled=busy || (id==='sheet' && !workbook) || (id==='confirm' && !!result?.errors.length);
+}
+async function saveCurrentWorkbook() {
+  if(savingWorkbook || !workbookBytes || !result || result.errors.length || !$('confirm').checked)return;
+  const selection=`${loadVersion}:${$('sheet').value}`;
+  if(selection===savedSelection){$('savedStatus').textContent='Deze Excel en dit werkblad zijn al gedeeld bewaard.';return;}
+  fileBusy(true);$('savedStatus').textContent='Excel gedeeld bewaren… Sluit deze pagina nog niet.';$('retrySave').hidden=true;
+  try {
+    const cloud=await import('./excel-workbook-cloud.mjs');
+    const response=await cloud.saveWorkbook({bytes:workbookBytes,name:filename,sheet:$('sheet').value,year:activeYear});
+    $('fileLogin').hidden=response.signedIn;
+    if(!response.signedIn){$('savedStatus').textContent='Deze Excel is nog niet bewaard. Meld je aan en lees het bestand opnieuw in om het gedeeld te bewaren.';$('retrySave').hidden=false;return;}
+    savedSelection=selection;
+    $('savedStatus').textContent=`Gedeeld bewaard: ${filename} · ${new Date(response.file.savedAt).toLocaleString('nl-BE')}. ${response.file.cleaned===false ? 'De vorige versie is vervangen, maar het opruimen ervan is nog niet gelukt.' : 'De vorige bewaarde Excel is vervangen.'}`;
+  } catch(error){$('savedStatus').textContent=`Excel bewaren niet bevestigd: ${error.message}. Je kunt met de huidige gegevens verderwerken; probeer bewaren opnieuw.`;$('retrySave').hidden=false;}
+  finally{fileBusy(false);}
+}
+async function restoreWorkbook(automatic=false) {
+  if(savingWorkbook || (automatic && workbook))return;
+  const version=loadVersion;
+  fileBusy(true);
+  $('restoreSaved').disabled=true;$('savedStatus').textContent='Laatste bewaarde Excel ophalen…';
+  try {
+    const cloud=await import('./excel-workbook-cloud.mjs');
+    const response=await cloud.loadWorkbook();
+    if(version!==loadVersion)return;
+    $('fileLogin').hidden=response.signedIn;
+    if(!response.signedIn){$('savedStatus').textContent='Meld je aan om de laatste Excel te openen en nieuwe uploads gedeeld te bewaren.';return;}
+    if(!response.file){$('savedStatus').textContent='Er is nog geen Excel gedeeld bewaard. Kies een bestand en bevestig de controle.';return;}
+    const file=response.file;
+    const restored=XLSX.read(file.bytes,{type:'array',cellFormula:true});
+    if(!restored.Sheets[file.sheet])throw Error('Het bewaarde werkblad ontbreekt.');
+    // Parse and validate again before enabling any reports.
+    loadVersion++;reset();workbook=restored;workbookBytes=file.bytes;filename=file.name;
+    $('sheet').replaceChildren(...workbook.SheetNames.map(name=>new Option(name,name)));$('sheet').value=file.sheet;$('sheet').disabled=false;
+    parseSheet();
+    if(result.errors.length)throw Error('De bewaarde Excel bevat importfouten. Controleer de meldingen.');
+    fileBusy(true);
+    if(file.year && file.year!==activeYear && !pricesDirty){$('priceYear').value=file.year;await loadYear();}
+    $('confirm').checked=true;savedSelection=`${loadVersion}:${file.sheet}`;acceptImport(false);
+    $('savedStatus').textContent=`Laatste Excel geopend: ${file.name} · bewaard op ${new Date(file.savedAt).toLocaleString('nl-BE')}. Berekeningen en lijsten gebruiken dit bestand.`;
+  } catch(error){if(version===loadVersion || workbook)$('savedStatus').textContent=`Bewaarde Excel niet geopend: ${error.message}. Je kunt zelf een Excel kiezen of opnieuw proberen.`;}
+  finally{fileBusy(false);}
+}
+$('retrySave').onclick=saveCurrentWorkbook;
+$('restoreSaved').onclick=()=>restoreWorkbook();
 function renderSettings() {
   $('settings').innerHTML = `<table><thead><tr><th>Product</th><th>Inkoop per stuk / klein doosje (€)</th><th>Stuks per grote doos</th></tr></thead><tbody>${PRODUCTS.map(p => `<tr><td>${escape(p.label)}</td><td><input aria-label="Inkoop ${escape(p.label)}" data-key="${p.key}" data-field="cost" inputmode="decimal" placeholder="Nog invullen" value="${settings[p.key]?.cost == null ? '' : (settings[p.key].cost / 100).toFixed(2)}"></td><td><input aria-label="Doosinhoud ${escape(p.label)}" data-key="${p.key}" data-field="pack" type="number" min="1" step="1" value="${settings[p.key]?.pack ?? p.pack}" ${p.supplier === 'Kerstrozen' ? 'disabled' : ''}></td></tr>`).join('')}</tbody></table>`;
 }
@@ -358,3 +413,4 @@ $('classesZip').onclick=()=>downloadClassZip(false);
 $('studentsZip').onclick=()=>downloadClassZip(true);
 try { $('priceYear').value = priceYear(localStorage.getItem('excel_verkoopjaar') || '2026'); } catch {}
 await loadYear();
+await restoreWorkbook(true);
